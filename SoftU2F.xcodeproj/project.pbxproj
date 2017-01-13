@@ -7,19 +7,66 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5143B0AF1E282829005717AD /* SoftU2F.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2F.hpp */; };
-		5143B0B11E282829005717AD /* SoftU2F.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2F.cpp */; };
+		5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */; };
+		5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2FDriver.cpp */; };
+		5143B0BA1E282941005717AD /* SoftU2FUserClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B81E282941005717AD /* SoftU2FUserClient.cpp */; };
+		5143B0BB1E282941005717AD /* SoftU2FUserClient.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0B91E282941005717AD /* SoftU2FUserClient.hpp */; };
+		514CF0BF1E2832C6004203C6 /* SoftU2FDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 514CF0BD1E2832C6004203C6 /* SoftU2FDevice.cpp */; };
+		514CF0C01E2832C6004203C6 /* SoftU2FDevice.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 514CF0BE1E2832C6004203C6 /* SoftU2FDevice.hpp */; };
+		514CF0EE1E285CBC004203C6 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 514CF0ED1E285CBC004203C6 /* main.c */; };
+		514CF1031E286052004203C6 /* SoftU2FClientInterface.c in Sources */ = {isa = PBXBuildFile; fileRef = 514CF0E11E285849004203C6 /* SoftU2FClientInterface.c */; };
+		514CF1041E286055004203C6 /* SoftU2FClientInterface.h in Headers */ = {isa = PBXBuildFile; fileRef = 514CF0E21E285849004203C6 /* SoftU2FClientInterface.h */; };
+		514CF1051E286068004203C6 /* libLibSoftU2F.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */; };
+		514CF1061E286122004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
+		514CF1071E286123004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		514CF0E91E285CBC004203C6 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		5143B0AB1E282828005717AD /* SoftU2F.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoftU2F.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		5143B0AE1E282829005717AD /* SoftU2F.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2F.hpp; sourceTree = "<group>"; };
-		5143B0B01E282829005717AD /* SoftU2F.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2F.cpp; sourceTree = "<group>"; };
+		5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDriver.hpp; sourceTree = "<group>"; };
+		5143B0B01E282829005717AD /* SoftU2FDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDriver.cpp; sourceTree = "<group>"; };
 		5143B0B21E282829005717AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5143B0B81E282941005717AD /* SoftU2FUserClient.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FUserClient.cpp; sourceTree = "<group>"; };
+		5143B0B91E282941005717AD /* SoftU2FUserClient.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FUserClient.hpp; sourceTree = "<group>"; };
+		5143B0BC1E2829F2005717AD /* UserKernelShared.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UserKernelShared.h; sourceTree = "<group>"; };
+		514CF0BD1E2832C6004203C6 /* SoftU2FDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDevice.cpp; sourceTree = "<group>"; };
+		514CF0BE1E2832C6004203C6 /* SoftU2FDevice.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDevice.hpp; sourceTree = "<group>"; };
+		514CF0E11E285849004203C6 /* SoftU2FClientInterface.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = SoftU2FClientInterface.c; path = SoftU2F/SoftU2FClientInterface.c; sourceTree = "<group>"; };
+		514CF0E21E285849004203C6 /* SoftU2FClientInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SoftU2FClientInterface.h; path = SoftU2F/SoftU2FClientInterface.h; sourceTree = "<group>"; };
+		514CF0EB1E285CBC004203C6 /* SoftU2FExample */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SoftU2FExample; sourceTree = BUILT_PRODUCTS_DIR; };
+		514CF0ED1E285CBC004203C6 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLibSoftU2F.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		5143B0A71E282828005717AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		514CF0E81E285CBC004203C6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				514CF1051E286068004203C6 /* libLibSoftU2F.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		514CF0FC1E28604F004203C6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,7 +79,9 @@
 		5143B0A11E282828005717AD = {
 			isa = PBXGroup;
 			children = (
+				514CF0E01E2857DD004203C6 /* LibSoftU2F */,
 				5143B0AD1E282828005717AD /* SoftU2F */,
+				514CF0EC1E285CBC004203C6 /* SoftU2FExample */,
 				5143B0AC1E282828005717AD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +90,8 @@
 			isa = PBXGroup;
 			children = (
 				5143B0AB1E282828005717AD /* SoftU2F.kext */,
+				514CF0EB1E285CBC004203C6 /* SoftU2FExample */,
+				514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,11 +99,33 @@
 		5143B0AD1E282828005717AD /* SoftU2F */ = {
 			isa = PBXGroup;
 			children = (
-				5143B0AE1E282829005717AD /* SoftU2F.hpp */,
-				5143B0B01E282829005717AD /* SoftU2F.cpp */,
+				5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */,
+				5143B0B01E282829005717AD /* SoftU2FDriver.cpp */,
+				514CF0BD1E2832C6004203C6 /* SoftU2FDevice.cpp */,
+				514CF0BE1E2832C6004203C6 /* SoftU2FDevice.hpp */,
+				5143B0B81E282941005717AD /* SoftU2FUserClient.cpp */,
+				5143B0B91E282941005717AD /* SoftU2FUserClient.hpp */,
+				5143B0BC1E2829F2005717AD /* UserKernelShared.h */,
 				5143B0B21E282829005717AD /* Info.plist */,
 			);
 			path = SoftU2F;
+			sourceTree = "<group>";
+		};
+		514CF0E01E2857DD004203C6 /* LibSoftU2F */ = {
+			isa = PBXGroup;
+			children = (
+				514CF0E11E285849004203C6 /* SoftU2FClientInterface.c */,
+				514CF0E21E285849004203C6 /* SoftU2FClientInterface.h */,
+			);
+			name = LibSoftU2F;
+			sourceTree = "<group>";
+		};
+		514CF0EC1E285CBC004203C6 /* SoftU2FExample */ = {
+			isa = PBXGroup;
+			children = (
+				514CF0ED1E285CBC004203C6 /* main.c */,
+			);
+			path = SoftU2FExample;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -62,7 +135,19 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5143B0AF1E282829005717AD /* SoftU2F.hpp in Headers */,
+				5143B0BB1E282941005717AD /* SoftU2FUserClient.hpp in Headers */,
+				514CF0C01E2832C6004203C6 /* SoftU2FDevice.hpp in Headers */,
+				5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */,
+				514CF1061E286122004203C6 /* UserKernelShared.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		514CF0FD1E28604F004203C6 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				514CF1041E286055004203C6 /* SoftU2FClientInterface.h in Headers */,
+				514CF1071E286123004203C6 /* UserKernelShared.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +172,40 @@
 			productReference = 5143B0AB1E282828005717AD /* SoftU2F.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
+		514CF0EA1E285CBC004203C6 /* SoftU2FExample */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 514CF0EF1E285CBC004203C6 /* Build configuration list for PBXNativeTarget "SoftU2FExample" */;
+			buildPhases = (
+				514CF0E71E285CBC004203C6 /* Sources */,
+				514CF0E81E285CBC004203C6 /* Frameworks */,
+				514CF0E91E285CBC004203C6 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SoftU2FExample;
+			productName = SoftU2FExample;
+			productReference = 514CF0EB1E285CBC004203C6 /* SoftU2FExample */;
+			productType = "com.apple.product-type.tool";
+		};
+		514CF0FE1E28604F004203C6 /* LibSoftU2F */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 514CF1001E28604F004203C6 /* Build configuration list for PBXNativeTarget "LibSoftU2F" */;
+			buildPhases = (
+				514CF0FB1E28604F004203C6 /* Sources */,
+				514CF0FC1E28604F004203C6 /* Frameworks */,
+				514CF0FD1E28604F004203C6 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LibSoftU2F;
+			productName = LibSoftU2F;
+			productReference = 514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -97,6 +216,14 @@
 				ORGANIZATIONNAME = GitHub;
 				TargetAttributes = {
 					5143B0AA1E282828005717AD = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
+					514CF0EA1E285CBC004203C6 = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
+					514CF0FE1E28604F004203C6 = {
 						CreatedOnToolsVersion = 8.2.1;
 						ProvisioningStyle = Automatic;
 					};
@@ -115,6 +242,8 @@
 			projectRoot = "";
 			targets = (
 				5143B0AA1E282828005717AD /* SoftU2F */,
+				514CF0EA1E285CBC004203C6 /* SoftU2FExample */,
+				514CF0FE1E28604F004203C6 /* LibSoftU2F */,
 			);
 		};
 /* End PBXProject section */
@@ -134,7 +263,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5143B0B11E282829005717AD /* SoftU2F.cpp in Sources */,
+				5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */,
+				514CF0BF1E2832C6004203C6 /* SoftU2FDevice.cpp in Sources */,
+				5143B0BA1E282941005717AD /* SoftU2FUserClient.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		514CF0E71E285CBC004203C6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				514CF0EE1E285CBC004203C6 /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		514CF0FB1E28604F004203C6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				514CF1031E286052004203C6 /* SoftU2FClientInterface.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +403,36 @@
 			};
 			name = Release;
 		};
+		514CF0F01E285CBC004203C6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		514CF0F11E285CBC004203C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		514CF1011E28604F004203C6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		514CF1021E28604F004203C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -273,6 +450,23 @@
 			buildConfigurations = (
 				5143B0B61E282829005717AD /* Debug */,
 				5143B0B71E282829005717AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		514CF0EF1E285CBC004203C6 /* Build configuration list for PBXNativeTarget "SoftU2FExample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				514CF0F01E285CBC004203C6 /* Debug */,
+				514CF0F11E285CBC004203C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		514CF1001E28604F004203C6 /* Build configuration list for PBXNativeTarget "LibSoftU2F" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				514CF1011E28604F004203C6 /* Debug */,
+				514CF1021E28604F004203C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};

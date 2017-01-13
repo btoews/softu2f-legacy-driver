@@ -4,15 +4,45 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>LibSoftU2F.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>SoftU2F.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>SoftU2FExample.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>5143B0AA1E282828005717AD</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>514CF0DA1E2857CB004203C6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>514CF0EA1E285CBC004203C6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>514CF0F61E28600E004203C6</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>514CF0FE1E28604F004203C6</key>
 		<dict>
 			<key>primary</key>
 			<true/>
