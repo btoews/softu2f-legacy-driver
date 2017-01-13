@@ -6,6 +6,22 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		510A056D1E2940DB005C3C0F /* All */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 510A05701E2940DB005C3C0F /* Build configuration list for PBXAggregateTarget "All" */;
+			buildPhases = (
+			);
+			dependencies = (
+				510A05721E2940FF005C3C0F /* PBXTargetDependency */,
+				510A05741E2940FF005C3C0F /* PBXTargetDependency */,
+				510A05761E2940FF005C3C0F /* PBXTargetDependency */,
+			);
+			name = All;
+			productName = All;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */; };
 		5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2FDriver.cpp */; };
@@ -20,6 +36,30 @@
 		514CF1061E286122004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
 		514CF1071E286123004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		510A05711E2940FF005C3C0F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5143B0A21E282828005717AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5143B0AA1E282828005717AD;
+			remoteInfo = SoftU2F;
+		};
+		510A05731E2940FF005C3C0F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5143B0A21E282828005717AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 514CF0EA1E285CBC004203C6;
+			remoteInfo = SoftU2FExample;
+		};
+		510A05751E2940FF005C3C0F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5143B0A21E282828005717AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 514CF0FE1E28604F004203C6;
+			remoteInfo = LibSoftU2F;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		514CF0E91E285CBC004203C6 /* CopyFiles */ = {
@@ -215,6 +255,10 @@
 				LastUpgradeCheck = 0820;
 				ORGANIZATIONNAME = GitHub;
 				TargetAttributes = {
+					510A056D1E2940DB005C3C0F = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
 					5143B0AA1E282828005717AD = {
 						CreatedOnToolsVersion = 8.2.1;
 						ProvisioningStyle = Automatic;
@@ -244,6 +288,7 @@
 				5143B0AA1E282828005717AD /* SoftU2F */,
 				514CF0EA1E285CBC004203C6 /* SoftU2FExample */,
 				514CF0FE1E28604F004203C6 /* LibSoftU2F */,
+				510A056D1E2940DB005C3C0F /* All */,
 			);
 		};
 /* End PBXProject section */
@@ -287,7 +332,39 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		510A05721E2940FF005C3C0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5143B0AA1E282828005717AD /* SoftU2F */;
+			targetProxy = 510A05711E2940FF005C3C0F /* PBXContainerItemProxy */;
+		};
+		510A05741E2940FF005C3C0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 514CF0EA1E285CBC004203C6 /* SoftU2FExample */;
+			targetProxy = 510A05731E2940FF005C3C0F /* PBXContainerItemProxy */;
+		};
+		510A05761E2940FF005C3C0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 514CF0FE1E28604F004203C6 /* LibSoftU2F */;
+			targetProxy = 510A05751E2940FF005C3C0F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		510A056E1E2940DB005C3C0F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		510A056F1E2940DB005C3C0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		5143B0B31E282829005717AD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -436,6 +513,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		510A05701E2940DB005C3C0F /* Build configuration list for PBXAggregateTarget "All" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				510A056E1E2940DB005C3C0F /* Debug */,
+				510A056F1E2940DB005C3C0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		5143B0A51E282828005717AD /* Build configuration list for PBXProject "SoftU2F" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -461,6 +546,7 @@
 				514CF0F11E285CBC004203C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		514CF1001E28604F004203C6 /* Build configuration list for PBXNativeTarget "LibSoftU2F" */ = {
 			isa = XCConfigurationList;
@@ -469,6 +555,7 @@
 				514CF1021E28604F004203C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
