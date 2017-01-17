@@ -8,56 +8,82 @@
 
 #include "SoftU2FClientInterface.h"
 
-io_connect_t* libSoftU2FInit() {
-    kern_return_t ret;
-    io_service_t service;
-    io_iterator_t iterator;
-    io_connect_t *connect;
-    bool driverFound = false;
-    
-    ret = IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName), &iterator);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "IOServiceGetMatchingServices returned 0x%08x\n\n", ret);
-        return NULL;
-    }
-    
-    while ((service = IOIteratorNext(iterator)) != IO_OBJECT_NULL) {
-        ret = IOServiceOpen(service, mach_task_self(), 0, connect);
-        if (ret == KERN_SUCCESS) {
-            driverFound = true;
-            break;
-        }
-        IOObjectRelease(service);
-    }
-    IOObjectRelease(iterator);
-    
-    if (driverFound == false) {
-        fprintf(stderr, "No matching drivers found.\n");
-        return NULL;
-    }
-    
-    // Open the user client.
-    ret = IOConnectCallScalarMethod(*connect, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Unable to open user client.\n");
-        return NULL;
-    }
-    
-    return connect;
+// Initialize libSoftU2F before usage.
+bool libSoftU2FInit() {
+    if (!libSoftU2FInitConnection()) return false;
+    if (!libSoftU2FOpenUserClient()) return false;
+
+    return true;
 }
 
-bool libSoftU2FDeinit(io_connect_t connect) {
+// Open connection to user client.
+bool libSoftU2FInitConnection() {
+    kern_return_t ret;
+    io_service_t service;
+    
+    service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
+    if (!service) {
+        fprintf(stderr, "SoftU2F.kext not loaded.\n");
+        return false;
+    }
+
+    ret = IOServiceOpen(service, mach_task_self(), 0, libSoftU2FConnection);
+    if (ret != KERN_SUCCESS) {
+        fprintf(stderr, "Error connecting to SoftU2F.kext: %d\n", ret);
+        return false;
+    }
+    IOObjectRetain(*libSoftU2FConnection);
+    IOObjectRelease(service);
+
+    return true;
+}
+
+// Initialize connection to user client.
+bool libSoftU2FOpenUserClient() {
     kern_return_t ret;
     
-    // Close the user client.
-    ret = IOConnectCallScalarMethod(connect, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
+    ret = IOConnectCallScalarMethod(*libSoftU2FConnection, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
     if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Unable to close user client.\n");
+        fprintf(stderr, "Unable to open user client: %d.\n", ret);
         return false;
     }
     
-    // Close user client connection.
-    IOServiceClose(connect);
+    return true;
+}
+
+// Cleanup after using libSoftU2F.
+bool libSoftU2FDeinit() {
+    if (!libSoftU2FCloseUserClient()) return false;
+    if (!libSoftU2FDeinitConnection()) return false;
+    
+    return true;
+}
+
+// Deinitialize connection to user client.
+bool libSoftU2FCloseUserClient() {
+    kern_return_t ret;
+
+    ret = IOConnectCallScalarMethod(*libSoftU2FConnection, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
+    if (ret != KERN_SUCCESS) {
+        fprintf(stderr, "Unable to close user client: %d.\n", ret);
+        return false;
+    }
+
+    return true;
+}
+
+// Close user client connection.
+bool libSoftU2FDeinitConnection() {
+    kern_return_t ret;
+    
+    ret = IOServiceClose(*libSoftU2FConnection);
+    
+    if (ret != KERN_SUCCESS) {
+        fprintf(stderr, "Error closing connection to SoftU2F.kext: %d.\n", ret);
+        return false;
+    }
+    
+    IOObjectRelease(*libSoftU2FConnection);
     
     return true;
 }

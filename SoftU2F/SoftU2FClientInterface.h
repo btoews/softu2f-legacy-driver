@@ -12,7 +12,13 @@
 #include "UserKernelShared.h"
 #include <IOKit/IOKitLib.h>
 
-io_connect_t* libSoftU2FInit();
-bool libSoftU2FDeinit(io_connect_t connect);
+io_connect_t* libSoftU2FConnection;
+
+bool libSoftU2FInit();
+bool libSoftU2FInitConnection();
+bool libSoftU2FOpenUserClient();
+bool libSoftU2FDeinit();
+bool libSoftU2FCloseUserClient();
+bool libSoftU2FDeinitConnection();
 
 #endif /* SoftU2FClientInterface_h */

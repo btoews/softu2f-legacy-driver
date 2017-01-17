@@ -22,6 +22,7 @@ class SoftU2FUserClientClassName : public IOUserClient
 protected:
     SoftU2FDriverClassName*					fProvider;
     task_t									fTask;
+    OSAsyncReference64                      asyncRef;
     static const IOExternalMethodDispatch	sMethods[kNumberOfMethods];
     
 public:
@@ -49,6 +50,12 @@ protected:
     
     static IOReturn sCloseUserClient(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
     virtual IOReturn closeUserClient(void);
+    
+    static IOReturn sRegisterAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
+    virtual IOReturn registerAsync(io_user_reference_t* asyncRefArg);
+    
+    static IOReturn sFireAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
+    virtual IOReturn fireAsync(void);
 };
 
 #endif /* SoftU2FUserClient_hpp */

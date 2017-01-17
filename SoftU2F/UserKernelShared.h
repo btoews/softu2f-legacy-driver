@@ -16,6 +16,8 @@
 enum {
     kSoftU2FUserClientOpen,
     kSoftU2FUserClientClose,
+    kSoftU2FClientRegisterAsync,
+    kSoftU2FClientFireAsync,
     kNumberOfMethods // Must be last
 };
 

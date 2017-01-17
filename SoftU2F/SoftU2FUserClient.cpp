@@ -31,7 +31,9 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
  */
 const IOExternalMethodDispatch SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
     {(IOExternalMethodAction) &SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
-    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0}
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sRegisterAsync, 0, 0, 0, 0},
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sFireAsync, 0, 0, 0, 0}
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments* arguments,
@@ -51,7 +53,6 @@ IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExterna
     
     return super::externalMethod(selector, arguments, dispatch, target, reference);
 }
-
 
 // There are two forms of IOUserClient::initWithTask, the second of which accepts an additional OSDictionary* parameter.
 // If your user client needs to modify its behavior when it's being used by a process running using Rosetta,
@@ -256,5 +257,23 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
 
     // Make sure we're the one who opened our provider before we tell it to close.
     fProvider->close(this);
+    return kIOReturnSuccess;
+}
+
+IOReturn SoftU2FUserClientClassName::sRegisterAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
+    return target->registerAsync(arguments->asyncReference);
+}
+
+IOReturn SoftU2FUserClientClassName::registerAsync(io_user_reference_t* asyncRefArg) {
+    bcopy(asyncRefArg, &asyncRef, sizeof(OSAsyncReference64));
+    return kIOReturnSuccess;
+}
+
+IOReturn SoftU2FUserClientClassName::sFireAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
+    return target->fireAsync();
+}
+
+IOReturn SoftU2FUserClientClassName::fireAsync() {
+    sendAsyncResult64(asyncRef, kIOReturnSuccess, NULL, 0);
     return kIOReturnSuccess;
 }
