@@ -189,6 +189,7 @@ IOService* SoftU2FDriverClassName::userClientDevice(IOService* userClient) {
         
         device->attach(this);
         device->start(this);
+        device->setUserClient(userClient);
     }
     
     return device;

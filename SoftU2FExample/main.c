@@ -8,59 +8,25 @@
 
 #include <stdio.h>
 #include <IOKit/IOKitLib.h>
-#include <mach/mach.h>
-#include "UserKernelShared.h"
 #include "SoftU2FClientInterface.h"
-
-io_connect_t* u2fConnect;
+#include "UserKernelShared.h"
 
 void cleanup(int sig) {
-    kern_return_t ret;
-    
-    // Close the user client.
-    ret = IOConnectCallScalarMethod(*u2fConnect, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Unable to close user client.\n");
-    }
-    
-    // Close user client connection.
-    IOServiceClose(*u2fConnect);
-    
+    softu2f_deinit();
     exit(0);
 }
 
 // IOAsyncCallback0
-void callback(void *context, IOReturn result) {
-    fprintf(stderr, "callback called\n");
+void callback(void *context, IOReturn result, void** args, int numArgs) {
+    fprintf(stderr, "callback called with %d args:\n", numArgs);
     CFRunLoopStop(CFRunLoopGetMain());
 }
 
 int main(int argc, const char * argv[]) {
-    kern_return_t ret;
-    io_service_t service;
-    io_connect_t connect;
-    io_async_ref64_t asyncRef;
-    IONotificationPortRef port;
-    CFRunLoopSourceRef runLoopSource;
-    
-    service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
-    if (!service) {
-        fprintf(stderr, "SoftU2F.kext not loaded.\n");
-        exit(1);
-    }
-    
-    ret = IOServiceOpen(service, mach_task_self(), 0, &connect);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Error connecting to SoftU2F.kext: %d\n", ret);
-        exit(1);
-    }
-    IOObjectRelease(service);
-    u2fConnect = &connect;
-    
-    // Open the user client.
-    ret = IOConnectCallScalarMethod(*u2fConnect, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Unable to open user client.\n");
+    U2F_HID_MESSAGE* msg;
+
+    if (!softu2f_init()) {
+        cleanup(0);
         exit(1);
     }
 
@@ -70,35 +36,39 @@ int main(int argc, const char * argv[]) {
     signal(SIGTERM, cleanup);
     signal(SIGKILL, cleanup);
     
-    port = IONotificationPortCreate(kIOMasterPortDefault);
-    runLoopSource = IONotificationPortGetRunLoopSource(port);
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
-    
-    asyncRef[kIOAsyncCalloutFuncIndex] = (uint64_t)callback;
-    asyncRef[kIOAsyncCalloutRefconIndex] = (uint64_t)(void*)0xdeadbeef;
-    
-    // Register async handler
-    ret = IOConnectCallAsyncScalarMethod(*u2fConnect, kSoftU2FClientRegisterAsync, IONotificationPortGetMachPort(port), asyncRef, kIOAsyncCalloutCount, NULL, 0, NULL, NULL);
-    if (ret != kIOReturnSuccess) {
-        fprintf(stderr, "error calling kSoftU2FClientRegisterAsync: %d\n", ret);
-        cleanup(0);
-        exit(1);
+    while (1) {
+        if (!softu2f_hid_msg_read(&msg)) break;
+        
+        switch (msg->cmd) {
+            case U2FHID_PING:
+                fprintf(stderr, "U2FHID_PING\n");
+                break;
+            case U2FHID_MSG:
+                fprintf(stderr, "U2FHID_MSG\n");
+                break;
+            case U2FHID_LOCK:
+                fprintf(stderr, "U2FHID_LOCK\n");
+                break;
+            case U2FHID_INIT:
+                fprintf(stderr, "U2FHID_INIT\n");
+                break;
+            case U2FHID_WINK:
+                fprintf(stderr, "U2FHID_WINK\n");
+                break;
+            case U2FHID_SYNC:
+                fprintf(stderr, "U2FHID_SYNC\n");
+                break;
+            case U2FHID_ERROR:
+                fprintf(stderr, "U2FHID_ERROR\n");
+                break;
+            default:
+                fprintf(stderr, "UNKOWN: 0x%08x\n", msg->cmd);
+                break;
+        }
+        
+        softu2f_hid_msg_free(msg);
     }
     
-    // Fire async handler
-    ret = IOConnectCallScalarMethod(*u2fConnect, kSoftU2FClientFireAsync, NULL, 0, NULL, NULL);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "error calling kSoftU2FClientFireAsync: %d\n", ret);
-        cleanup(0);
-        exit(1);
-    }
-    
-    CFRunLoopRun();
-
-    for(;;) {
-        fprintf(stderr, "sleeping...\n");
-        sleep(10);
-    }
-    
-    return 0;
+    softu2f_hid_msg_free(msg);
+    cleanup(0);
 }

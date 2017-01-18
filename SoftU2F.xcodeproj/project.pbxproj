@@ -23,6 +23,10 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		511603D01E2F054E00AC319E /* u2f_hid.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CE1E2F054E00AC319E /* u2f_hid.h */; };
+		511603D11E2F054E00AC319E /* u2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CF1E2F054E00AC319E /* u2f.h */; };
+		511603D21E2F055400AC319E /* u2f_hid.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CE1E2F054E00AC319E /* u2f_hid.h */; };
+		511603D31E2F055E00AC319E /* u2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CF1E2F054E00AC319E /* u2f.h */; };
 		513DB1001E2EAEDB00ED737E /* libLibSoftU2F.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */; };
 		5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */; };
 		5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2FDriver.cpp */; };
@@ -74,6 +78,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		511603CE1E2F054E00AC319E /* u2f_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = u2f_hid.h; path = SoftU2F/inc/u2f_hid.h; sourceTree = "<group>"; };
+		511603CF1E2F054E00AC319E /* u2f.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = u2f.h; path = SoftU2F/inc/u2f.h; sourceTree = "<group>"; };
 		5143B0AB1E282828005717AD /* SoftU2F.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoftU2F.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDriver.hpp; sourceTree = "<group>"; };
 		5143B0B01E282829005717AD /* SoftU2FDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDriver.cpp; sourceTree = "<group>"; };
@@ -116,9 +122,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		511603CD1E2F054500AC319E /* inc */ = {
+			isa = PBXGroup;
+			children = (
+				511603CE1E2F054E00AC319E /* u2f_hid.h */,
+				511603CF1E2F054E00AC319E /* u2f.h */,
+			);
+			name = inc;
+			sourceTree = "<group>";
+		};
 		5143B0A11E282828005717AD = {
 			isa = PBXGroup;
 			children = (
+				511603CD1E2F054500AC319E /* inc */,
 				514CF0E01E2857DD004203C6 /* LibSoftU2F */,
 				5143B0AD1E282828005717AD /* SoftU2F */,
 				514CF0EC1E285CBC004203C6 /* SoftU2FExample */,
@@ -175,9 +191,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				511603D11E2F054E00AC319E /* u2f.h in Headers */,
 				5143B0BB1E282941005717AD /* SoftU2FUserClient.hpp in Headers */,
 				514CF0C01E2832C6004203C6 /* SoftU2FDevice.hpp in Headers */,
 				5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */,
+				511603D01E2F054E00AC319E /* u2f_hid.h in Headers */,
 				514CF1061E286122004203C6 /* UserKernelShared.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -186,8 +204,10 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				511603D31E2F055E00AC319E /* u2f.h in Headers */,
 				514CF1041E286055004203C6 /* SoftU2FClientInterface.h in Headers */,
 				514CF1071E286123004203C6 /* UserKernelShared.h in Headers */,
+				511603D21E2F055400AC319E /* u2f_hid.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

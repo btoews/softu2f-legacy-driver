@@ -22,7 +22,7 @@ class SoftU2FUserClientClassName : public IOUserClient
 protected:
     SoftU2FDriverClassName*					fProvider;
     task_t									fTask;
-    OSAsyncReference64                      asyncRef;
+    OSArray*                                fQueuedSetReports;
     static const IOExternalMethodDispatch	sMethods[kNumberOfMethods];
     
 public:
@@ -41,6 +41,8 @@ public:
     virtual bool terminate(IOOptionBits options = 0) override;
     virtual bool finalize(IOOptionBits options) override;
     
+    virtual bool queueSetReport(IOMemoryDescriptor* report);
+    
 protected:
     virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments* arguments, IOExternalMethodDispatch* dispatch, OSObject* target, void* reference) override;
     
@@ -51,11 +53,8 @@ protected:
     static IOReturn sCloseUserClient(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
     virtual IOReturn closeUserClient(void);
     
-    static IOReturn sRegisterAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
-    virtual IOReturn registerAsync(io_user_reference_t* asyncRefArg);
-    
-    static IOReturn sFireAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
-    virtual IOReturn fireAsync(void);
+    static IOReturn sGetSetReport(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
+    virtual IOReturn getSetReport(U2FHID_FRAME* frame, size_t* frameSize);
 };
 
 #endif /* SoftU2FUserClient_hpp */

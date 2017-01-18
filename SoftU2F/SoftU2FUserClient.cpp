@@ -10,7 +10,6 @@
 #include <IOKit/IOKitKeys.h>
 #include "SoftU2FUserClient.hpp"
 
-
 #define super IOUserClient
 
 OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
@@ -32,8 +31,7 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
 const IOExternalMethodDispatch SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
     {(IOExternalMethodAction) &SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
     {(IOExternalMethodAction) &SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
-    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sRegisterAsync, 0, 0, 0, 0},
-    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sFireAsync, 0, 0, 0, 0}
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sGetSetReport, 0, 0, 0, sizeof(U2FHID_FRAME)},
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments* arguments,
@@ -70,6 +68,7 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void* securityT
     
     fTask = owningTask;
     fProvider = NULL;
+    fQueuedSetReports = OSArray::withCapacity(1);
     
     return success;
 }
@@ -238,7 +237,16 @@ IOReturn SoftU2FUserClientClassName::sCloseUserClient(SoftU2FUserClientClassName
 IOReturn SoftU2FUserClientClassName::closeUserClient() {
     IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
     
-    if (fProvider == NULL) {
+    if (fQueuedSetReports) {
+        while (fQueuedSetReports->getCount()) {
+            fQueuedSetReports->removeObject(0);
+        }
+
+        fQueuedSetReports->release();
+        fQueuedSetReports = nullptr;
+    }
+    
+    if (!fProvider) {
         // Return an error if we don't have a provider. This could happen if the user process
         // called closeUserClient without calling IOServiceOpen first.
         IOLog("%s[%p]::%s(): returning kIOReturnNotAttached.\n", getName(), this, __FUNCTION__);
@@ -260,20 +268,47 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
     return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FUserClientClassName::sRegisterAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
-    return target->registerAsync(arguments->asyncReference);
+IOReturn SoftU2FUserClientClassName::sGetSetReport(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
+    return target->getSetReport((U2FHID_FRAME*)arguments->structureOutput, (size_t*)&arguments->structureOutputSize);
 }
 
-IOReturn SoftU2FUserClientClassName::registerAsync(io_user_reference_t* asyncRefArg) {
-    bcopy(asyncRefArg, &asyncRef, sizeof(OSAsyncReference64));
+IOReturn SoftU2FUserClientClassName::getSetReport(U2FHID_FRAME* frame, size_t* frameSize) {
+    IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+
+    OSData* report;
+    OSObject* obj;
+
+    if (!fQueuedSetReports || !fTask) return kIOReturnNotOpen;
+    
+    obj = fQueuedSetReports->getObject(0);
+    if (!obj) return kIOReturnNoFrames;
+    
+    report = OSDynamicCast(OSData, obj);
+    if (!report) return kIOReturnError;
+    
+    memcpy(frame, report->getBytesNoCopy(), report->getLength());
+    *frameSize = report->getLength();
+
+    fQueuedSetReports->removeObject(0);
+    
     return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FUserClientClassName::sFireAsync(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
-    return target->fireAsync();
-}
+bool SoftU2FUserClientClassName::queueSetReport(IOMemoryDescriptor* report) {
+    IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+    
+    if (!fQueuedSetReports) return false;
 
-IOReturn SoftU2FUserClientClassName::fireAsync() {
-    sendAsyncResult64(asyncRef, kIOReturnSuccess, NULL, 0);
-    return kIOReturnSuccess;
+    OSData *userReport;
+    IOMemoryMap *reportMap;
+    
+    report->prepare();
+    
+    reportMap = report->map();
+    userReport = OSData::withBytes((void*)reportMap->getAddress(), (unsigned int)reportMap->getLength());
+
+    report->complete();
+    reportMap->release();
+
+    return fQueuedSetReports->setObject(userReport);
 }

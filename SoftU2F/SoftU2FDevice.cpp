@@ -8,6 +8,7 @@
 
 #include <IOKit/IOLib.h>
 #include "SoftU2FDevice.hpp"
+#include "SoftU2FUserClient.hpp"
 
 #define super IOHIDDevice
 OSDefineMetaClassAndStructors(com_github_SoftU2FDevice, IOHIDDevice)
@@ -35,6 +36,11 @@ void SoftU2FDeviceClassName::stop(IOService *provider) {
 
 void SoftU2FDeviceClassName::free() {
     IOLog("%s[%p]::%s\n", getName(), this, __FUNCTION__);
+    
+    if (dUserClient) {
+        dUserClient->release();
+    }
+    
     super::free();
 }
 
@@ -53,6 +59,16 @@ IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descri
     return kIOReturnSuccess;
 }
 
+IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
+    IOLog("%s[%p]::%s(%p, %d, %d)\n", getName(), this, __FUNCTION__, report, reportType, options);
+
+    if (dUserClient) {
+        dUserClient->queueSetReport(report);
+    }
+
+    return kIOReturnSuccess;
+}
+
 OSString *SoftU2FDeviceClassName::newProductString() const {
     return OSString::withCString("SoftU2F");
 }
@@ -67,4 +83,15 @@ OSNumber *SoftU2FDeviceClassName::newVendorIDNumber() const {
 
 OSNumber *SoftU2FDeviceClassName::newProductIDNumber() const {
     return OSNumber::withNumber(123, 32);
+}
+
+bool SoftU2FDeviceClassName::setUserClient(IOService* userClient) {
+    dUserClient = OSDynamicCast(SoftU2FUserClientClassName, userClient);
+
+    if (dUserClient) {
+        dUserClient->retain();
+        return true;
+    } else {
+        return false;
+    }
 }

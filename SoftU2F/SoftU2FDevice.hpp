@@ -10,6 +10,7 @@
 #define SoftU2FDevice_hpp
 
 #include <IOKit/hid/IOHIDDevice.h>
+#include "SoftU2FUserClient.hpp"
 
 unsigned char const u2fhid_report_descriptor[] = {
     0x06, 0xD0, 0xF1,  // Usage Page (Reserved 0xF1D0)
@@ -35,6 +36,9 @@ unsigned char const u2fhid_report_descriptor[] = {
 class SoftU2FDeviceClassName : public IOHIDDevice {
     OSDeclareDefaultStructors(com_github_SoftU2FDevice)
     
+protected:
+    SoftU2FUserClientClassName *dUserClient;
+    
 public:
     virtual bool init(OSDictionary *dictionary = 0) override;
     virtual bool start(IOService *provider) override;
@@ -47,6 +51,9 @@ public:
     virtual OSNumber *newVendorIDNumber() const override;
     virtual OSNumber *newProductIDNumber() const override;
     virtual IOReturn newReportDescriptor(IOMemoryDescriptor **descriptor) const override;
+    virtual IOReturn setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options=0) override;
+    
+    virtual bool setUserClient(IOService* userClient);
 };
 
 #endif /* SoftU2FDevice_hpp */
