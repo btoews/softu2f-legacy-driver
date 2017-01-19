@@ -7,23 +7,32 @@
 //
 
 #include "SoftU2FClientInterface.h"
-#include "UserKernelShared.h"
-#include <IOKit/IOKitLib.h>
 #include <stdio.h>
 
 softu2f_ctx *ctx;
 
 void cleanup(int sig) {
-  softu2f_deinit(ctx);
-  exit(0);
+  // Stop the run loop gracefully.
+  if (ctx)
+    ctx->shutdown = true;
+}
+
+bool handle_u2f_msg(softu2f_ctx *ctx, softu2f_hid_message *msg) {
+  printf("Received U2F message from device.\n");
+
+  // Send an error, since we don't handle higher level messages yet.
+  return softu2f_hid_err_send(ctx, msg->cid, ERR_OTHER);
+  ;
 }
 
 int main(int argc, const char *argv[]) {
-  CFDataRef msg;
-
+  printf("Initializing connection to driver.\n");
   ctx = softu2f_init();
-  if (!ctx)
+
+  if (!ctx) {
+    printf("Error initializing connection to driver.\n");
     exit(1);
+  }
 
   signal(SIGHUP, cleanup);
   signal(SIGINT, cleanup);
@@ -31,10 +40,12 @@ int main(int argc, const char *argv[]) {
   signal(SIGTERM, cleanup);
   signal(SIGKILL, cleanup);
 
-  while ((msg = softu2f_u2f_msg_read(ctx))) {
-    fprintf(stderr, "Received U2F message from device.\n");
-    CFRelease(msg);
-  }
+  printf("Registering handler for high-level U2F messages.\n");
+  softu2f_hid_msg_handler_register(ctx, U2FHID_MSG, handle_u2f_msg);
 
-  cleanup(0);
+  printf("Listening for HID messages.\n");
+  softu2f_run(ctx);
+
+  printf("Shutting down.\n");
+  softu2f_deinit(ctx);
 }

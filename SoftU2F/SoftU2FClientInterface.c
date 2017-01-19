@@ -66,31 +66,35 @@ void softu2f_deinit(softu2f_ctx *ctx) {
   free(ctx);
 }
 
-// Read a U2F message from the device.
-CFDataRef softu2f_u2f_msg_read(softu2f_ctx *ctx) {
-  CFDataRef u2fmsg;
+// Read HID messages from device in loop.
+void softu2f_run(softu2f_ctx *ctx) {
   softu2f_hid_message *hidmsg;
   softu2f_hid_message_handler handler;
 
-  while ((hidmsg = softu2f_hid_msg_read(ctx))) {
-    if (hidmsg->cmd == U2FHID_MSG) {
-      u2fmsg = hidmsg->data;
-      free(hidmsg);
-      return u2fmsg;
-    }
+  while (true) {
+    // Stop the run loop.
+    if (ctx->shutdown)
+      break;
 
-    if ((handler = soft_u2f_hid_msg_handler(ctx, hidmsg))) {
-      if (!handler(ctx, hidmsg)) {
-        fprintf(stderr, "Error handling HID message\n");
+    hidmsg = softu2f_hid_msg_read(ctx);
+
+    if (hidmsg) {
+      handler = softu2f_hid_msg_handler(ctx, hidmsg);
+
+      if (handler) {
+        if (!handler(ctx, hidmsg)) {
+          fprintf(stderr, "Error handling HID message\n");
+        }
+      } else {
+        fprintf(stderr, "No handler for HID message\n");
+        softu2f_hid_err_send(ctx, hidmsg->cid, ERR_OTHER);
       }
-    } else {
-      fprintf(stderr, "No handler for HID message\n");
+
+      handler = NULL;
     }
 
     softu2f_hid_msg_free(hidmsg);
   }
-
-  return NULL;
 }
 
 // Is this client allowed to start a transaction (not locked by another client)?
@@ -195,6 +199,10 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
   }
 
   while (1) {
+    // Stop the run loop.
+    if (ctx->shutdown)
+      goto done;
+
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientGetFrame, NULL,
                                     0, &frame, &frame_size);
     switch (ret) {
@@ -206,7 +214,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
     case kIOReturnSuccess:
       if (frame_size != HID_RPT_SIZE) {
         fprintf(stderr, "bad frame\n");
-        goto fail;
+        goto done;
       }
 
       if (!softu2f_hid_is_unlocked_for_client(ctx, frame.cid)) {
@@ -215,7 +223,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
       }
 
       if (!softu2f_hid_msg_frame_read(ctx, msg, &frame)) {
-        goto fail;
+        goto done;
       }
 
       break;
@@ -223,7 +231,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
     default:
       fprintf(stderr, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n",
               ret);
-      goto fail;
+      goto done;
     }
 
     if (msg->buf) {
@@ -238,9 +246,9 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
 
   return NULL;
 
-fail:
+done:
   softu2f_hid_msg_free(msg);
-  return false;
+  return NULL;
 }
 
 // Read an individual HID frame from the device into a HID message.
@@ -332,9 +340,60 @@ bool softu2f_hid_msg_frame_handle_sync(softu2f_ctx *ctx, U2FHID_FRAME *frame) {
   return softu2f_hid_msg_send(ctx, &resp);
 }
 
+// Register a handler for a message type.
+void softu2f_hid_msg_handler_register(softu2f_ctx *ctx, uint8_t type,
+                                      softu2f_hid_message_handler handler) {
+  switch (type) {
+  case U2FHID_PING:
+    ctx->ping_handler = handler;
+    break;
+  case U2FHID_MSG:
+    ctx->msg_handler = handler;
+    break;
+  case U2FHID_LOCK:
+    ctx->lock_handler = handler;
+    break;
+  case U2FHID_INIT:
+    ctx->init_handler = handler;
+    break;
+  case U2FHID_WINK:
+    ctx->wink_handler = handler;
+    break;
+  }
+}
+
 // Find a message handler for a message.
-softu2f_hid_message_handler soft_u2f_hid_msg_handler(softu2f_ctx *ctx,
-                                                     softu2f_hid_message *msg) {
+softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx,
+                                                    softu2f_hid_message *msg) {
+  switch (msg->cmd) {
+  case U2FHID_PING:
+    if (ctx->ping_handler)
+      return ctx->ping_handler;
+    break;
+  case U2FHID_MSG:
+    if (ctx->msg_handler)
+      return ctx->msg_handler;
+    break;
+  case U2FHID_LOCK:
+    if (ctx->lock_handler)
+      return ctx->lock_handler;
+    break;
+  case U2FHID_INIT:
+    if (ctx->init_handler)
+      return ctx->init_handler;
+    break;
+  case U2FHID_WINK:
+    if (ctx->wink_handler)
+      return ctx->wink_handler;
+    break;
+  }
+
+  return softu2f_hid_msg_handler_default(ctx, msg);
+}
+
+// Find the default message handler for a message.
+softu2f_hid_message_handler
+softu2f_hid_msg_handler_default(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   switch (msg->cmd) {
   case U2FHID_PING:
     return softu2f_hid_msg_handle_ping;
