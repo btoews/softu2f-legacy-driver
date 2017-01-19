@@ -9,7 +9,8 @@
 #include "SoftU2FClientInterface.h"
 
 io_connect_t* softu2f_connection;
-uint32_t next_cid;
+U2F_HID_LOCK* softu2f_lock;
+uint32_t softu2f_next_cid;
 
 // Initialize libSoftU2F before usage.
 bool softu2f_init() {
@@ -67,6 +68,22 @@ CFDataRef softu2f_u2f_msg_read() {
     }
     
     return NULL;
+}
+
+// Is this client allowed to start a transaction (not locked by another client)?
+bool softu2f_hid_is_unlocked_for_client(uint32_t cid) {
+    // No lock.
+    if (!softu2f_lock) return true;
+    
+    // Lock expired.
+    if (softu2f_lock->expiration < time(NULL)) {
+        free(softu2f_lock);
+        softu2f_lock = NULL;
+        return true;
+    }
+    
+    // Is it locked by this client.
+    return softu2f_lock->cid == cid;
 }
 
 // Send a HID message to the device.
@@ -144,7 +161,7 @@ U2F_HID_MESSAGE* softu2f_hid_msg_read() {
         ret = IOConnectCallStructMethod(*softu2f_connection, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
         switch (ret) {
             case kIOReturnNoFrames:
-                // poll interval is 5ms.
+                // TODO: poll interval is 5ms.
                 sleep(1);
                 break;
 
@@ -154,7 +171,12 @@ U2F_HID_MESSAGE* softu2f_hid_msg_read() {
                     goto fail;
                 }
                 
-                if (!softu2f_hid_msg_read_frame(msg, &frame)) {
+                if (!softu2f_hid_is_unlocked_for_client(frame.cid)) {
+                    // TODO: respond busy.
+                    break;
+                }
+                
+                if (!softu2f_hid_msg_frame_read(msg, &frame)) {
                     goto fail;
                 }
                 
@@ -165,8 +187,11 @@ U2F_HID_MESSAGE* softu2f_hid_msg_read() {
                 goto fail;
         }
         
-        if (msg->data) {
-            if (CFDataGetLength(msg->data) == msg->bcnt) {
+        if (msg->buf) {
+            if (CFDataGetLength(msg->buf) == msg->bcnt) {
+                msg->data = CFDataCreateCopy(NULL, msg->buf);
+                CFRelease(msg->buf);
+                msg->buf = NULL;
                 return msg;
             }
         }
@@ -180,13 +205,18 @@ fail:
 }
 
 // Read an individual HID frame from the device into a HID message.
-bool softu2f_hid_msg_read_frame(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
+bool softu2f_hid_msg_frame_read(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
     uint8_t* data;
     unsigned int ndata;
 
     switch (FRAME_TYPE(*frame)) {
         case TYPE_INIT:
-            if (msg->data) {
+            if (frame->init.cmd == U2FHID_SYNC && msg->buf && msg->cid == frame->cid) {
+                softu2f_hid_msg_frame_handle_sync(frame);
+                return false;
+            }
+            
+            if (msg->buf) {
                 // TODO: respond busy
                 fprintf(stderr, "init frame out of order. ignoring.\n");
                 return true;
@@ -195,7 +225,7 @@ bool softu2f_hid_msg_read_frame(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
             msg->cmd = frame->init.cmd;
             msg->cid = frame->cid;
             msg->bcnt = MSG_LEN(*frame);
-            msg->data = CFDataCreateMutable(NULL, msg->bcnt);
+            msg->buf = CFDataCreateMutable(NULL, msg->bcnt);
             
             data = frame->init.data;
             
@@ -208,8 +238,13 @@ bool softu2f_hid_msg_read_frame(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
             break;
         
         case TYPE_CONT:
-            if (!msg->data) {
+            if (!msg->buf) {
                 fprintf(stderr, "cont frame out of order. ignoring\n");
+                return true;
+            }
+            
+            if (frame->cid != msg->cid) {
+                fprintf(stderr, "spurious CNT from other channel. ignoring.\n");
                 return true;
             }
             
@@ -220,8 +255,8 @@ bool softu2f_hid_msg_read_frame(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
 
             data = frame->cont.data;
             
-            if (CFDataGetLength(msg->data) + sizeof(frame->cont.data) > msg->bcnt) {
-                ndata = msg->bcnt - (uint16_t)CFDataGetLength(msg->data);
+            if (CFDataGetLength(msg->buf) + sizeof(frame->cont.data) > msg->bcnt) {
+                ndata = msg->bcnt - (uint16_t)CFDataGetLength(msg->buf);
             } else {
                 ndata = sizeof(frame->cont.data);
             }
@@ -233,54 +268,45 @@ bool softu2f_hid_msg_read_frame(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
             return false;
     }
     
-    CFDataAppendBytes(msg->data, data, ndata);
+    CFDataAppendBytes(msg->buf, data, ndata);
     
     return true;
 }
 
-bool softu2f_hid_msg_handle(U2F_HID_MESSAGE *msg) {
-    switch (msg->cmd) {
-        case U2FHID_PING:
-            fprintf(stderr, "Handling Request: U2FHID_PING\n");
-            return false;
-        case U2FHID_MSG:
-            fprintf(stderr, "Handling Request: U2FHID_MSG\n");
-            return false;
-        case U2FHID_LOCK:
-            fprintf(stderr, "Handling Request: U2FHID_LOCK\n");
-            return false;
-        case U2FHID_INIT:
-            fprintf(stderr, "Handling Request: U2FHID_INIT\n");
-            return softu2f_hid_msg_handle_init(msg);
-        case U2FHID_WINK:
-            fprintf(stderr, "Handling Request: U2FHID_WINK\n");
-            return false;
-        case U2FHID_SYNC:
-            fprintf(stderr, "Handling Request: U2FHID_SYNC\n");
-            return false;
-        case U2FHID_ERROR:
-            fprintf(stderr, "Handling Request: U2FHID_ERROR\n");
-            return false;
-        default:
-            fprintf(stderr, "Handling Request: UNKOWN 0x%08x\n", msg->cmd);
-            return false;
-    }
+// Handle a SYNC packet.
+bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
+    bool ret;
+    U2FHID_SYNC_REQ *req_data;
+    U2FHID_SYNC_RESP resp_data;
+    U2F_HID_MESSAGE resp;
+    
+    req_data = (U2FHID_SYNC_REQ*)frame->init.data;
+    resp_data.nonce = req_data->nonce;
+    
+    resp.cid = frame->cid;
+    resp.cmd = U2FHID_SYNC;
+    resp.bcnt = sizeof(U2FHID_SYNC_RESP);
+    resp.data = CFDataCreateWithBytesNoCopy(NULL, (uint8_t*)&resp_data, resp.bcnt, NULL);
+    
+    ret = softu2f_hid_msg_send(&resp);
+    CFRelease(resp.data);
+    
+    return ret;
 }
 
+// Find a message handler for a message.
 U2F_HID_MESSAGE_HANDLER soft_u2f_hid_msg_handler(U2F_HID_MESSAGE *msg) {
     switch (msg->cmd) {
         case U2FHID_PING:
-            return NULL;
+            return softu2f_hid_msg_handle_ping;
         case U2FHID_MSG:
             return NULL;
         case U2FHID_LOCK:
-            return NULL;
+            return softu2f_hid_msg_handle_lock;
         case U2FHID_INIT:
             return softu2f_hid_msg_handle_init;
         case U2FHID_WINK:
-            return NULL;
-        case U2FHID_SYNC:
-            return NULL;
+            return softu2f_hid_msg_handle_wink;
         default:
             return NULL;
     }
@@ -304,7 +330,7 @@ bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
     if (req->cid == CID_BROADCAST) {
         // Allocate a new CID for the client and tell them about it.
         resp.cid = CID_BROADCAST;
-        resp_data.cid = next_cid++;
+        resp_data.cid = softu2f_next_cid++;
     } else {
         // Use whatever CID they wanted.
         resp.cid = req->cid;
@@ -321,10 +347,75 @@ bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
     return softu2f_hid_msg_send(&resp);
 }
 
+// Send a PING response for a given request.
+bool softu2f_hid_msg_handle_ping(U2F_HID_MESSAGE* req) {
+    fprintf(stderr, "Sending Response: U2FHID_PING\n");
+    
+    U2F_HID_MESSAGE resp;
+    
+    resp.cid = req->cid;
+    resp.cmd = U2FHID_PING;
+    resp.bcnt = req->bcnt;
+    resp.data = req->data;
+    
+    return softu2f_hid_msg_send(&resp);
+}
+
+// Send a WINK response for a given request.
+bool softu2f_hid_msg_handle_wink(U2F_HID_MESSAGE* req) {
+    fprintf(stderr, "Sending Response: U2FHID_WINK\n");
+    
+    // TODO: error if data isn't empty.
+    
+    U2F_HID_MESSAGE resp;
+    
+    resp.cid = req->cid;
+    resp.cmd = U2FHID_WINK;
+    resp.bcnt = 0;
+    resp.data = CFDataCreateMutable(NULL, 0);
+    
+    // TODO: is the resp getting freed?
+    return softu2f_hid_msg_send(&resp);
+}
+
+// Send a LOCK response for a given request.
+bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
+    fprintf(stderr, "Sending Response: U2FHID_LOCK\n");
+
+    U2F_HID_MESSAGE resp;
+    uint8_t *duration;
+    
+    duration = (uint8_t*)CFDataGetBytePtr(req->data);
+    if (*duration > 10) {
+        // Max lock is 10 seconds.
+        *duration = 10;
+    }
+    
+    if (*duration == 0) {
+        // Clear lock.
+        if (softu2f_lock) {
+            free(softu2f_lock);
+            softu2f_lock = NULL;
+        }
+    } else {
+        softu2f_lock = malloc(sizeof(U2F_HID_LOCK));
+        softu2f_lock->cid = req->cid;
+        softu2f_lock->expiration = time(NULL) + *duration;
+    }
+    
+    resp.cid = req->cid;
+    resp.cmd = U2FHID_LOCK;
+    resp.bcnt = 0;
+    resp.data = CFDataCreateMutable(NULL, 0);
+    
+    return softu2f_hid_msg_send(&resp);
+}
+
 // Free a HID message and associated data.
 void softu2f_hid_msg_free(U2F_HID_MESSAGE* msg) {
     if (msg) {
         if (msg->data) CFRelease(msg->data);
+        if (msg->buf) CFRelease(msg->buf);
         free(msg);
     }
 }
