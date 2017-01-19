@@ -16,11 +16,11 @@
 
 // User client method dispatch selectors.
 enum {
-    kSoftU2FUserClientOpen,
-    kSoftU2FUserClientClose,
-    kSoftU2FUserClientGetFrame,
-    kSoftU2FUserClientSendFrame,
-    kNumberOfMethods // Must be last
+  kSoftU2FUserClientOpen,
+  kSoftU2FUserClientClose,
+  kSoftU2FUserClientGetFrame,
+  kSoftU2FUserClientSendFrame,
+  kNumberOfMethods // Must be last
 };
 
 #endif /* UserKernelShared_h */
