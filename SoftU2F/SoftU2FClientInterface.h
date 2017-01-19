@@ -42,6 +42,9 @@ bool softu2f_hid_is_unlocked_for_client(uint32_t cid);
 // Send a HID message to the device.
 bool softu2f_hid_msg_send(U2F_HID_MESSAGE* msg);
 
+// Send a HID error to the device.
+bool softu2f_hid_err_send(uint32_t cid, uint8_t code);
+
 // Read a HID message from the device.
 U2F_HID_MESSAGE* softu2f_hid_msg_read();
 

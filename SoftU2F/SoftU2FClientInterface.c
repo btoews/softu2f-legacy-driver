@@ -142,6 +142,21 @@ bool softu2f_hid_msg_send(U2F_HID_MESSAGE* msg) {
     return true;
 }
 
+// Send a HID error to the device.
+bool softu2f_hid_err_send(uint32_t cid, uint8_t code) {
+    U2F_HID_MESSAGE msg;
+    bool ret;
+    
+    msg.cmd = U2FHID_ERROR;
+    msg.cid = cid;
+    msg.bcnt = 1;
+    msg.data = CFDataCreateWithBytesNoCopy(NULL, &code, 1, NULL);
+    
+    ret = softu2f_hid_msg_send(&msg);
+    CFRelease(msg.data);
+    return ret;
+}
+
 // Read a HID message from the device.
 U2F_HID_MESSAGE* softu2f_hid_msg_read() {
     kern_return_t ret;
@@ -172,7 +187,7 @@ U2F_HID_MESSAGE* softu2f_hid_msg_read() {
                 }
                 
                 if (!softu2f_hid_is_unlocked_for_client(frame.cid)) {
-                    // TODO: respond busy.
+                    softu2f_hid_err_send(frame.cid, ERR_CHANNEL_BUSY);
                     break;
                 }
                 
@@ -217,7 +232,7 @@ bool softu2f_hid_msg_frame_read(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
             }
             
             if (msg->buf) {
-                // TODO: respond busy
+                softu2f_hid_err_send(frame->cid, ERR_CHANNEL_BUSY);
                 fprintf(stderr, "init frame out of order. ignoring.\n");
                 return true;
             }
@@ -250,6 +265,7 @@ bool softu2f_hid_msg_frame_read(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
             
             if (FRAME_SEQ(*frame) != ++msg->lastSeq) {
                 fprintf(stderr, "bad seq in cont frame. bailing\n");
+                softu2f_hid_err_send(frame->cid, ERR_INVALID_SEQ);
                 return false;
             }
 
@@ -290,7 +306,6 @@ bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
     
     ret = softu2f_hid_msg_send(&resp);
     CFRelease(resp.data);
-    
     return ret;
 }
 
@@ -319,12 +334,12 @@ bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
     U2F_HID_MESSAGE resp;
     U2FHID_INIT_RESP resp_data;
     U2FHID_INIT_REQ *req_data;
+    bool ret;
     
     req_data = (U2FHID_INIT_REQ*)CFDataGetBytePtr(req->data);
     
     resp.cmd = U2FHID_INIT;
     resp.bcnt = sizeof(U2FHID_INIT_RESP);
-    // TODO: make mutable copy.
     resp.data = CFDataCreateWithBytesNoCopy(NULL, (uint8_t*)&resp_data, resp.bcnt, NULL);
     
     if (req->cid == CID_BROADCAST) {
@@ -344,7 +359,9 @@ bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
     resp_data.versionBuild = 0;
     resp_data.capFlags |= CAPFLAG_WINK;
     
-    return softu2f_hid_msg_send(&resp);
+    ret = softu2f_hid_msg_send(&resp);
+    CFRelease(resp.data);
+    return ret;
 }
 
 // Send a PING response for a given request.
@@ -365,16 +382,13 @@ bool softu2f_hid_msg_handle_ping(U2F_HID_MESSAGE* req) {
 bool softu2f_hid_msg_handle_wink(U2F_HID_MESSAGE* req) {
     fprintf(stderr, "Sending Response: U2FHID_WINK\n");
     
-    // TODO: error if data isn't empty.
-    
     U2F_HID_MESSAGE resp;
     
     resp.cid = req->cid;
     resp.cmd = U2FHID_WINK;
-    resp.bcnt = 0;
-    resp.data = CFDataCreateMutable(NULL, 0);
-    
-    // TODO: is the resp getting freed?
+    resp.bcnt = req->bcnt;
+    resp.data = req->data;
+
     return softu2f_hid_msg_send(&resp);
 }
 
@@ -384,6 +398,7 @@ bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
 
     U2F_HID_MESSAGE resp;
     uint8_t *duration;
+    bool ret;
     
     duration = (uint8_t*)CFDataGetBytePtr(req->data);
     if (*duration > 10) {
@@ -408,7 +423,9 @@ bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
     resp.bcnt = 0;
     resp.data = CFDataCreateMutable(NULL, 0);
     
-    return softu2f_hid_msg_send(&resp);
+    ret = softu2f_hid_msg_send(&resp);
+    CFRelease(resp.data);
+    return ret;
 }
 
 // Free a HID message and associated data.
