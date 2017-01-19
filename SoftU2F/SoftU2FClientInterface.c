@@ -9,7 +9,7 @@
 #include "SoftU2FClientInterface.h"
 
 io_connect_t* softu2f_connection;
-U2F_HID_LOCK* softu2f_lock;
+softu2f_hid_lock* softu2f_lock;
 uint32_t softu2f_next_cid;
 
 // Initialize libSoftU2F before usage.
@@ -46,8 +46,8 @@ bool softu2f_init() {
 // Read a U2F message from the device.
 CFDataRef softu2f_u2f_msg_read() {
     CFDataRef u2fmsg;
-    U2F_HID_MESSAGE *hidmsg;
-    U2F_HID_MESSAGE_HANDLER handler;
+    softu2f_hid_message *hidmsg;
+    softu2f_hid_message_handler handler;
     
     while ((hidmsg = softu2f_hid_msg_read())) {
         if (hidmsg->cmd == U2FHID_MSG) {
@@ -87,7 +87,7 @@ bool softu2f_hid_is_unlocked_for_client(uint32_t cid) {
 }
 
 // Send a HID message to the device.
-bool softu2f_hid_msg_send(U2F_HID_MESSAGE* msg) {
+bool softu2f_hid_msg_send(softu2f_hid_message* msg) {
     uint8_t *src;
     uint8_t *src_end;
     uint8_t *dst;
@@ -144,7 +144,7 @@ bool softu2f_hid_msg_send(U2F_HID_MESSAGE* msg) {
 
 // Send a HID error to the device.
 bool softu2f_hid_err_send(uint32_t cid, uint8_t code) {
-    U2F_HID_MESSAGE msg;
+    softu2f_hid_message msg;
     bool ret;
     
     msg.cmd = U2FHID_ERROR;
@@ -158,15 +158,15 @@ bool softu2f_hid_err_send(uint32_t cid, uint8_t code) {
 }
 
 // Read a HID message from the device.
-U2F_HID_MESSAGE* softu2f_hid_msg_read() {
+softu2f_hid_message* softu2f_hid_msg_read() {
     kern_return_t ret;
-    U2F_HID_MESSAGE* msg;
+    softu2f_hid_message* msg;
     U2FHID_FRAME frame;
     unsigned long frame_size = HID_RPT_SIZE;
     
     if (!softu2f_connection) return false;
 
-    msg = (U2F_HID_MESSAGE*)calloc(1, sizeof(U2F_HID_MESSAGE));
+    msg = (softu2f_hid_message*)calloc(1, sizeof(softu2f_hid_message));
     if (!msg) {
         fprintf(stderr, "No memory for new message.\n");
         return NULL;
@@ -220,7 +220,7 @@ fail:
 }
 
 // Read an individual HID frame from the device into a HID message.
-bool softu2f_hid_msg_frame_read(U2F_HID_MESSAGE* msg, U2FHID_FRAME* frame) {
+bool softu2f_hid_msg_frame_read(softu2f_hid_message* msg, U2FHID_FRAME* frame) {
     uint8_t* data;
     unsigned int ndata;
 
@@ -294,7 +294,7 @@ bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
     bool ret;
     U2FHID_SYNC_REQ *req_data;
     U2FHID_SYNC_RESP resp_data;
-    U2F_HID_MESSAGE resp;
+    softu2f_hid_message resp;
     
     req_data = (U2FHID_SYNC_REQ*)frame->init.data;
     resp_data.nonce = req_data->nonce;
@@ -310,7 +310,7 @@ bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
 }
 
 // Find a message handler for a message.
-U2F_HID_MESSAGE_HANDLER soft_u2f_hid_msg_handler(U2F_HID_MESSAGE *msg) {
+softu2f_hid_message_handler soft_u2f_hid_msg_handler(softu2f_hid_message *msg) {
     switch (msg->cmd) {
         case U2FHID_PING:
             return softu2f_hid_msg_handle_ping;
@@ -328,10 +328,10 @@ U2F_HID_MESSAGE_HANDLER soft_u2f_hid_msg_handler(U2F_HID_MESSAGE *msg) {
 }
 
 // Send an INIT response for a given request.
-bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
+bool softu2f_hid_msg_handle_init(softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_INIT\n");
 
-    U2F_HID_MESSAGE resp;
+    softu2f_hid_message resp;
     U2FHID_INIT_RESP resp_data;
     U2FHID_INIT_REQ *req_data;
     bool ret;
@@ -365,10 +365,10 @@ bool softu2f_hid_msg_handle_init(U2F_HID_MESSAGE* req) {
 }
 
 // Send a PING response for a given request.
-bool softu2f_hid_msg_handle_ping(U2F_HID_MESSAGE* req) {
+bool softu2f_hid_msg_handle_ping(softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_PING\n");
     
-    U2F_HID_MESSAGE resp;
+    softu2f_hid_message resp;
     
     resp.cid = req->cid;
     resp.cmd = U2FHID_PING;
@@ -379,10 +379,10 @@ bool softu2f_hid_msg_handle_ping(U2F_HID_MESSAGE* req) {
 }
 
 // Send a WINK response for a given request.
-bool softu2f_hid_msg_handle_wink(U2F_HID_MESSAGE* req) {
+bool softu2f_hid_msg_handle_wink(softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_WINK\n");
     
-    U2F_HID_MESSAGE resp;
+    softu2f_hid_message resp;
     
     resp.cid = req->cid;
     resp.cmd = U2FHID_WINK;
@@ -393,10 +393,10 @@ bool softu2f_hid_msg_handle_wink(U2F_HID_MESSAGE* req) {
 }
 
 // Send a LOCK response for a given request.
-bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
+bool softu2f_hid_msg_handle_lock(softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_LOCK\n");
 
-    U2F_HID_MESSAGE resp;
+    softu2f_hid_message resp;
     uint8_t *duration;
     bool ret;
     
@@ -413,7 +413,7 @@ bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
             softu2f_lock = NULL;
         }
     } else {
-        softu2f_lock = malloc(sizeof(U2F_HID_LOCK));
+        softu2f_lock = malloc(sizeof(softu2f_hid_lock));
         softu2f_lock->cid = req->cid;
         softu2f_lock->expiration = time(NULL) + *duration;
     }
@@ -429,7 +429,7 @@ bool softu2f_hid_msg_handle_lock(U2F_HID_MESSAGE* req) {
 }
 
 // Free a HID message and associated data.
-void softu2f_hid_msg_free(U2F_HID_MESSAGE* msg) {
+void softu2f_hid_msg_free(softu2f_hid_message* msg) {
     if (msg) {
         if (msg->data) CFRelease(msg->data);
         if (msg->buf) CFRelease(msg->buf);
