@@ -11,18 +11,18 @@
 #include "SoftU2FClientInterface.h"
 #include "UserKernelShared.h"
 
+softu2f_ctx* ctx;
+
 void cleanup(int sig) {
-    softu2f_deinit();
+    softu2f_deinit(ctx);
     exit(0);
 }
 
 int main(int argc, const char * argv[]) {
     CFDataRef msg;
-
-    if (!softu2f_init()) {
-        cleanup(0);
-        exit(1);
-    }
+    
+    ctx = softu2f_init();
+    if (!ctx) exit(1);
 
     signal(SIGHUP, cleanup);
     signal(SIGINT, cleanup);
@@ -30,7 +30,7 @@ int main(int argc, const char * argv[]) {
     signal(SIGTERM, cleanup);
     signal(SIGKILL, cleanup);
     
-    while ((msg = softu2f_u2f_msg_read())) {
+    while ((msg = softu2f_u2f_msg_read(ctx))) {
         fprintf(stderr, "Received U2F message from device.\n");
         CFRelease(msg);
     }

@@ -8,56 +8,76 @@
 
 #include "SoftU2FClientInterface.h"
 
-io_connect_t* softu2f_connection;
-softu2f_hid_lock* softu2f_lock;
-uint32_t softu2f_next_cid;
-
 // Initialize libSoftU2F before usage.
-bool softu2f_init() {
+softu2f_ctx* softu2f_init() {
+    softu2f_ctx *ctx;
     kern_return_t ret;
     io_service_t service;
     
     service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
     if (!service) {
         fprintf(stderr, "SoftU2F.kext not loaded.\n");
-        return false;
+        return NULL;
     }
     
+    // Allocate a new context.
+    ctx = (softu2f_ctx*)calloc(1, sizeof(softu2f_ctx));
+    
     // Open connection to user client.
-    softu2f_connection = malloc(sizeof(io_connect_t));
-    ret = IOServiceOpen(service, mach_task_self(), 0, softu2f_connection);
+    ret = IOServiceOpen(service, mach_task_self(), 0, &ctx->con);
     if (ret != KERN_SUCCESS) {
         fprintf(stderr, "Error connecting to SoftU2F.kext: %d\n", ret);
-        return false;
+        return NULL;
     }
-    IOObjectRetain(*softu2f_connection);
     IOObjectRelease(service);
     
     // Initialize connection to user client.
-    ret = IOConnectCallScalarMethod(*softu2f_connection, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
+    ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
     if (ret != KERN_SUCCESS) {
         fprintf(stderr, "Unable to open user client: %d.\n", ret);
-        return false;
+        return NULL;
     }
 
-    return true;
+    return ctx;
+}
+
+// Cleanup after using libSoftU2F.
+void softu2f_deinit(softu2f_ctx* ctx) {
+    kern_return_t ret;
+    
+    // Deinitialize connection to user client.
+    ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
+    if (ret != KERN_SUCCESS) {
+        fprintf(stderr, "Unable to close user client: %d.\n", ret);
+        return;
+    }
+    
+    // Close user client connection.
+    ret = IOServiceClose(ctx->con);
+    if (ret != KERN_SUCCESS) {
+        fprintf(stderr, "Error closing connection to SoftU2F.kext: %d.\n", ret);
+        return;
+    }
+    
+    // Cleanup
+    free(ctx);
 }
 
 // Read a U2F message from the device.
-CFDataRef softu2f_u2f_msg_read() {
+CFDataRef softu2f_u2f_msg_read(softu2f_ctx* ctx) {
     CFDataRef u2fmsg;
     softu2f_hid_message *hidmsg;
     softu2f_hid_message_handler handler;
     
-    while ((hidmsg = softu2f_hid_msg_read())) {
+    while ((hidmsg = softu2f_hid_msg_read(ctx))) {
         if (hidmsg->cmd == U2FHID_MSG) {
             u2fmsg = hidmsg->data;
             free(hidmsg);
             return u2fmsg;
         }
         
-        if ((handler = soft_u2f_hid_msg_handler(hidmsg))) {
-            if (!handler(hidmsg)) {
+        if ((handler = soft_u2f_hid_msg_handler(ctx, hidmsg))) {
+            if (!handler(ctx, hidmsg)) {
                 fprintf(stderr, "Error handling HID message\n");
             }
         } else {
@@ -71,23 +91,23 @@ CFDataRef softu2f_u2f_msg_read() {
 }
 
 // Is this client allowed to start a transaction (not locked by another client)?
-bool softu2f_hid_is_unlocked_for_client(uint32_t cid) {
+bool softu2f_hid_is_unlocked_for_client(softu2f_ctx* ctx, uint32_t cid) {
     // No lock.
-    if (!softu2f_lock) return true;
+    if (!ctx->lock) return true;
     
     // Lock expired.
-    if (softu2f_lock->expiration < time(NULL)) {
-        free(softu2f_lock);
-        softu2f_lock = NULL;
+    if (ctx->lock->expiration < time(NULL)) {
+        free(ctx->lock);
+        ctx->lock = NULL;
         return true;
     }
     
     // Is it locked by this client.
-    return softu2f_lock->cid == cid;
+    return ctx->lock->cid == cid;
 }
 
 // Send a HID message to the device.
-bool softu2f_hid_msg_send(softu2f_hid_message* msg) {
+bool softu2f_hid_msg_send(softu2f_ctx* ctx, softu2f_hid_message* msg) {
     uint8_t *src;
     uint8_t *src_end;
     uint8_t *dst;
@@ -120,7 +140,7 @@ bool softu2f_hid_msg_send(softu2f_hid_message* msg) {
         }
         
         // Send frame.
-        ret = IOConnectCallStructMethod(*softu2f_connection, kSoftU2FUserClientSendFrame, &frame, HID_RPT_SIZE, NULL, NULL);
+        ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame, &frame, HID_RPT_SIZE, NULL, NULL);
         if (ret != kIOReturnSuccess) {
             fprintf(stderr, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n", ret);
             return false;
@@ -143,28 +163,23 @@ bool softu2f_hid_msg_send(softu2f_hid_message* msg) {
 }
 
 // Send a HID error to the device.
-bool softu2f_hid_err_send(uint32_t cid, uint8_t code) {
+bool softu2f_hid_err_send(softu2f_ctx* ctx, uint32_t cid, uint8_t code) {
     softu2f_hid_message msg;
-    bool ret;
     
     msg.cmd = U2FHID_ERROR;
     msg.cid = cid;
     msg.bcnt = 1;
     msg.data = CFDataCreateWithBytesNoCopy(NULL, &code, 1, NULL);
     
-    ret = softu2f_hid_msg_send(&msg);
-    CFRelease(msg.data);
-    return ret;
+    return softu2f_hid_msg_send(ctx, &msg);
 }
 
 // Read a HID message from the device.
-softu2f_hid_message* softu2f_hid_msg_read() {
+softu2f_hid_message* softu2f_hid_msg_read(softu2f_ctx* ctx) {
     kern_return_t ret;
     softu2f_hid_message* msg;
     U2FHID_FRAME frame;
     unsigned long frame_size = HID_RPT_SIZE;
-    
-    if (!softu2f_connection) return false;
 
     msg = (softu2f_hid_message*)calloc(1, sizeof(softu2f_hid_message));
     if (!msg) {
@@ -173,7 +188,7 @@ softu2f_hid_message* softu2f_hid_msg_read() {
     }
     
     while (1) {
-        ret = IOConnectCallStructMethod(*softu2f_connection, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
+        ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
         switch (ret) {
             case kIOReturnNoFrames:
                 // TODO: poll interval is 5ms.
@@ -186,12 +201,12 @@ softu2f_hid_message* softu2f_hid_msg_read() {
                     goto fail;
                 }
                 
-                if (!softu2f_hid_is_unlocked_for_client(frame.cid)) {
-                    softu2f_hid_err_send(frame.cid, ERR_CHANNEL_BUSY);
+                if (!softu2f_hid_is_unlocked_for_client(ctx, frame.cid)) {
+                    softu2f_hid_err_send(ctx, frame.cid, ERR_CHANNEL_BUSY);
                     break;
                 }
                 
-                if (!softu2f_hid_msg_frame_read(msg, &frame)) {
+                if (!softu2f_hid_msg_frame_read(ctx, msg, &frame)) {
                     goto fail;
                 }
                 
@@ -220,19 +235,19 @@ fail:
 }
 
 // Read an individual HID frame from the device into a HID message.
-bool softu2f_hid_msg_frame_read(softu2f_hid_message* msg, U2FHID_FRAME* frame) {
+bool softu2f_hid_msg_frame_read(softu2f_ctx* ctx, softu2f_hid_message* msg, U2FHID_FRAME* frame) {
     uint8_t* data;
     unsigned int ndata;
 
     switch (FRAME_TYPE(*frame)) {
         case TYPE_INIT:
             if (frame->init.cmd == U2FHID_SYNC && msg->buf && msg->cid == frame->cid) {
-                softu2f_hid_msg_frame_handle_sync(frame);
+                softu2f_hid_msg_frame_handle_sync(ctx, frame);
                 return false;
             }
             
             if (msg->buf) {
-                softu2f_hid_err_send(frame->cid, ERR_CHANNEL_BUSY);
+                softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
                 fprintf(stderr, "init frame out of order. ignoring.\n");
                 return true;
             }
@@ -265,7 +280,7 @@ bool softu2f_hid_msg_frame_read(softu2f_hid_message* msg, U2FHID_FRAME* frame) {
             
             if (FRAME_SEQ(*frame) != ++msg->lastSeq) {
                 fprintf(stderr, "bad seq in cont frame. bailing\n");
-                softu2f_hid_err_send(frame->cid, ERR_INVALID_SEQ);
+                softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
                 return false;
             }
 
@@ -290,8 +305,7 @@ bool softu2f_hid_msg_frame_read(softu2f_hid_message* msg, U2FHID_FRAME* frame) {
 }
 
 // Handle a SYNC packet.
-bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
-    bool ret;
+bool softu2f_hid_msg_frame_handle_sync(softu2f_ctx* ctx, U2FHID_FRAME* frame) {
     U2FHID_SYNC_REQ *req_data;
     U2FHID_SYNC_RESP resp_data;
     softu2f_hid_message resp;
@@ -304,13 +318,11 @@ bool softu2f_hid_msg_frame_handle_sync(U2FHID_FRAME* frame) {
     resp.bcnt = sizeof(U2FHID_SYNC_RESP);
     resp.data = CFDataCreateWithBytesNoCopy(NULL, (uint8_t*)&resp_data, resp.bcnt, NULL);
     
-    ret = softu2f_hid_msg_send(&resp);
-    CFRelease(resp.data);
-    return ret;
+    return softu2f_hid_msg_send(ctx, &resp);
 }
 
 // Find a message handler for a message.
-softu2f_hid_message_handler soft_u2f_hid_msg_handler(softu2f_hid_message *msg) {
+softu2f_hid_message_handler soft_u2f_hid_msg_handler(softu2f_ctx* ctx, softu2f_hid_message *msg) {
     switch (msg->cmd) {
         case U2FHID_PING:
             return softu2f_hid_msg_handle_ping;
@@ -328,13 +340,12 @@ softu2f_hid_message_handler soft_u2f_hid_msg_handler(softu2f_hid_message *msg) {
 }
 
 // Send an INIT response for a given request.
-bool softu2f_hid_msg_handle_init(softu2f_hid_message* req) {
+bool softu2f_hid_msg_handle_init(softu2f_ctx* ctx, softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_INIT\n");
 
     softu2f_hid_message resp;
     U2FHID_INIT_RESP resp_data;
     U2FHID_INIT_REQ *req_data;
-    bool ret;
     
     req_data = (U2FHID_INIT_REQ*)CFDataGetBytePtr(req->data);
     
@@ -345,7 +356,7 @@ bool softu2f_hid_msg_handle_init(softu2f_hid_message* req) {
     if (req->cid == CID_BROADCAST) {
         // Allocate a new CID for the client and tell them about it.
         resp.cid = CID_BROADCAST;
-        resp_data.cid = softu2f_next_cid++;
+        resp_data.cid = ctx->next_cid++;
     } else {
         // Use whatever CID they wanted.
         resp.cid = req->cid;
@@ -359,13 +370,11 @@ bool softu2f_hid_msg_handle_init(softu2f_hid_message* req) {
     resp_data.versionBuild = 0;
     resp_data.capFlags |= CAPFLAG_WINK;
     
-    ret = softu2f_hid_msg_send(&resp);
-    CFRelease(resp.data);
-    return ret;
+    return softu2f_hid_msg_send(ctx, &resp);
 }
 
 // Send a PING response for a given request.
-bool softu2f_hid_msg_handle_ping(softu2f_hid_message* req) {
+bool softu2f_hid_msg_handle_ping(softu2f_ctx* ctx, softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_PING\n");
     
     softu2f_hid_message resp;
@@ -375,11 +384,11 @@ bool softu2f_hid_msg_handle_ping(softu2f_hid_message* req) {
     resp.bcnt = req->bcnt;
     resp.data = req->data;
     
-    return softu2f_hid_msg_send(&resp);
+    return softu2f_hid_msg_send(ctx, &resp);
 }
 
 // Send a WINK response for a given request.
-bool softu2f_hid_msg_handle_wink(softu2f_hid_message* req) {
+bool softu2f_hid_msg_handle_wink(softu2f_ctx* ctx, softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_WINK\n");
     
     softu2f_hid_message resp;
@@ -389,11 +398,11 @@ bool softu2f_hid_msg_handle_wink(softu2f_hid_message* req) {
     resp.bcnt = req->bcnt;
     resp.data = req->data;
 
-    return softu2f_hid_msg_send(&resp);
+    return softu2f_hid_msg_send(ctx, &resp);
 }
 
 // Send a LOCK response for a given request.
-bool softu2f_hid_msg_handle_lock(softu2f_hid_message* req) {
+bool softu2f_hid_msg_handle_lock(softu2f_ctx* ctx, softu2f_hid_message* req) {
     fprintf(stderr, "Sending Response: U2FHID_LOCK\n");
 
     softu2f_hid_message resp;
@@ -408,14 +417,14 @@ bool softu2f_hid_msg_handle_lock(softu2f_hid_message* req) {
     
     if (*duration == 0) {
         // Clear lock.
-        if (softu2f_lock) {
-            free(softu2f_lock);
-            softu2f_lock = NULL;
+        if (ctx->lock) {
+            free(ctx->lock);
+            ctx->lock = NULL;
         }
     } else {
-        softu2f_lock = malloc(sizeof(softu2f_hid_lock));
-        softu2f_lock->cid = req->cid;
-        softu2f_lock->expiration = time(NULL) + *duration;
+        ctx->lock = malloc(sizeof(softu2f_hid_lock));
+        ctx->lock->cid = req->cid;
+        ctx->lock->expiration = time(NULL) + *duration;
     }
     
     resp.cid = req->cid;
@@ -423,7 +432,7 @@ bool softu2f_hid_msg_handle_lock(softu2f_hid_message* req) {
     resp.bcnt = 0;
     resp.data = CFDataCreateMutable(NULL, 0);
     
-    ret = softu2f_hid_msg_send(&resp);
+    ret = softu2f_hid_msg_send(ctx, &resp);
     CFRelease(resp.data);
     return ret;
 }
@@ -435,31 +444,4 @@ void softu2f_hid_msg_free(softu2f_hid_message* msg) {
         if (msg->buf) CFRelease(msg->buf);
         free(msg);
     }
-}
-
-// Cleanup after using libSoftU2F.
-bool softu2f_deinit() {
-    kern_return_t ret;
-
-    if (!softu2f_connection) return false;
-    
-    // Deinitialize connection to user client.
-    ret = IOConnectCallScalarMethod(*softu2f_connection, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Unable to close user client: %d.\n", ret);
-        return false;
-    }
-    
-    // Close user client connection.
-    ret = IOServiceClose(*softu2f_connection);
-    if (ret != KERN_SUCCESS) {
-        fprintf(stderr, "Error closing connection to SoftU2F.kext: %d.\n", ret);
-        return false;
-    }
-    
-    // Cleanup.
-    IOObjectRelease(*softu2f_connection);
-    free(softu2f_connection);
-    
-    return true;
 }
