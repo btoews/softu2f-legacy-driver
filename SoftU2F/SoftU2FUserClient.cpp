@@ -31,7 +31,8 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
 const IOExternalMethodDispatch SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
     {(IOExternalMethodAction) &SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
     {(IOExternalMethodAction) &SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
-    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sGetSetReport, 0, 0, 0, sizeof(U2FHID_FRAME)},
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sGetFrame, 0, 0, 0, sizeof(U2FHID_FRAME)},
+    {(IOExternalMethodAction) &SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments* arguments,
@@ -196,6 +197,25 @@ bool SoftU2FUserClientClassName::finalize(IOOptionBits options)
     return success;
 }
 
+bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor* report) {
+    IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+    
+    if (!fQueuedSetReports) return false;
+    
+    OSData *userReport;
+    IOMemoryMap *reportMap;
+    
+    report->prepare();
+    
+    reportMap = report->map();
+    userReport = OSData::withBytes((void*)reportMap->getAddress(), (unsigned int)reportMap->getLength());
+    
+    report->complete();
+    reportMap->release();
+    
+    return fQueuedSetReports->setObject(userReport);
+}
+
 IOReturn SoftU2FUserClientClassName::sOpenUserClient(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments)
 {
     return target->openUserClient();
@@ -268,12 +288,15 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
     return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FUserClientClassName::sGetSetReport(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
-    return target->getSetReport((U2FHID_FRAME*)arguments->structureOutput, (size_t*)&arguments->structureOutputSize);
+IOReturn SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
+    return target->getFrame((U2FHID_FRAME*)arguments->structureOutput, (size_t*)&arguments->structureOutputSize);
 }
 
-IOReturn SoftU2FUserClientClassName::getSetReport(U2FHID_FRAME* frame, size_t* frameSize) {
+IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME* frame, size_t* frameSize) {
     IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+    
+    if (!fProvider) return kIOReturnNotAttached;
+    if (!fProvider->isOpen(this)) return kIOReturnNotOpen;
 
     OSData* report;
     OSObject* obj;
@@ -294,21 +317,20 @@ IOReturn SoftU2FUserClientClassName::getSetReport(U2FHID_FRAME* frame, size_t* f
     return kIOReturnSuccess;
 }
 
-bool SoftU2FUserClientClassName::queueSetReport(IOMemoryDescriptor* report) {
+IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments) {
+    return target->sendFrame((U2FHID_FRAME*)arguments->structureInput, arguments->structureInputSize);
+}
+
+IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME* frame, size_t frameSize) {
     IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
-    
-    if (!fQueuedSetReports) return false;
 
-    OSData *userReport;
-    IOMemoryMap *reportMap;
+    if (!fProvider) return kIOReturnNotAttached;
+    if (!fProvider->isOpen(this)) return kIOReturnNotOpen;
+    if (frameSize != HID_RPT_SIZE) return kIOReturnBadArgument;
     
-    report->prepare();
-    
-    reportMap = report->map();
-    userReport = OSData::withBytes((void*)reportMap->getAddress(), (unsigned int)reportMap->getLength());
-
-    report->complete();
-    reportMap->release();
-
-    return fQueuedSetReports->setObject(userReport);
+    if (fProvider->userClientDeviceSend(this, frame)) {
+        return kIOReturnSuccess;
+    } else {
+        return kIOReturnError;
+    }
 }

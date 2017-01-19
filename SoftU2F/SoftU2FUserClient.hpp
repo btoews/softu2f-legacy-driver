@@ -41,7 +41,7 @@ public:
     virtual bool terminate(IOOptionBits options = 0) override;
     virtual bool finalize(IOOptionBits options) override;
     
-    virtual bool queueSetReport(IOMemoryDescriptor* report);
+    virtual bool queueFrame(IOMemoryDescriptor* report);
     
 protected:
     virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments* arguments, IOExternalMethodDispatch* dispatch, OSObject* target, void* reference) override;
@@ -53,8 +53,11 @@ protected:
     static IOReturn sCloseUserClient(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
     virtual IOReturn closeUserClient(void);
     
-    static IOReturn sGetSetReport(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
-    virtual IOReturn getSetReport(U2FHID_FRAME* frame, size_t* frameSize);
+    static IOReturn sGetFrame(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
+    virtual IOReturn getFrame(U2FHID_FRAME* frame, size_t* frameSize);
+    
+    static IOReturn sSendFrame(SoftU2FUserClientClassName* target, void* reference, IOExternalMethodArguments* arguments);
+    virtual IOReturn sendFrame(U2FHID_FRAME* frame, size_t frameSize);
 };
 
 #endif /* SoftU2FUserClient_hpp */

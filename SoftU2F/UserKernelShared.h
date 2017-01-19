@@ -18,7 +18,8 @@
 enum {
     kSoftU2FUserClientOpen,
     kSoftU2FUserClientClose,
-    kSoftU2FUserClientGetSetReport,
+    kSoftU2FUserClientGetFrame,
+    kSoftU2FUserClientSendFrame,
     kNumberOfMethods // Must be last
 };
 

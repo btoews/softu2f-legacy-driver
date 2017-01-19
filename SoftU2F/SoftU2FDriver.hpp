@@ -34,6 +34,7 @@ public:
     virtual OSString* userClientKey(IOService* userClient);
     virtual IOService* userClientDevice(IOService* userClient);
     virtual bool destroyUserClientDevice(IOService* userClient);
+    virtual bool userClientDeviceSend(IOService* userClient, U2FHID_FRAME* frame);
 
 private:
     OSDictionary *m_hid_devices;

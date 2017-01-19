@@ -63,7 +63,7 @@ IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDRepo
     IOLog("%s[%p]::%s(%p, %d, %d)\n", getName(), this, __FUNCTION__, report, reportType, options);
 
     if (dUserClient) {
-        dUserClient->queueSetReport(report);
+        dUserClient->queueFrame(report);
     }
 
     return kIOReturnSuccess;

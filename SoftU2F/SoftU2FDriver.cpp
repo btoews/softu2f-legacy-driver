@@ -200,6 +200,8 @@ fail:
 }
 
 bool SoftU2FDriverClassName::destroyUserClientDevice(IOService* userClient) {
+    IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, userClient);
+
     SoftU2FDeviceClassName *device;
     
     OSString *key = userClientKey(userClient);
@@ -218,4 +220,31 @@ fail:
     if (device) device->release();
     if (key) key->release();
     return false;
+}
+
+bool SoftU2FDriverClassName::userClientDeviceSend(IOService* userClient, U2FHID_FRAME* frame) {
+    IOLog("%s[%p]::%s(%p, %p)\n", getName(), this, __FUNCTION__, userClient, frame);
+
+    IOMemoryDescriptor *report = nullptr;
+    SoftU2FDeviceClassName *device;
+    bool ret;
+
+    device = (SoftU2FDeviceClassName*)userClientDevice(userClient);
+    if (!device) return false;
+    
+    report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
+    if (!report) return false;
+    
+    report->writeBytes(0, frame, HID_RPT_SIZE);
+    
+    if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess) {
+        IOLog("Report correctly sent to device.");
+        ret = true;
+    } else {
+        IOLog("Error while sending report to device.");
+    }
+    
+    report->release();
+    
+    return ret;
 }
