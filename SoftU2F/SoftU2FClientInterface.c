@@ -207,8 +207,8 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
                                     0, &frame, &frame_size);
     switch (ret) {
     case kIOReturnNoFrames:
-      // TODO: poll interval is 5ms.
-      sleep(1);
+      // Polling interval is 5ms.
+      sleep(0.005);
       break;
 
     case kIOReturnSuccess:

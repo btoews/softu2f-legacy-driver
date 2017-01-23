@@ -27,6 +27,10 @@
 		511603D11E2F054E00AC319E /* u2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CF1E2F054E00AC319E /* u2f.h */; };
 		511603D21E2F055400AC319E /* u2f_hid.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CE1E2F054E00AC319E /* u2f_hid.h */; };
 		511603D31E2F055E00AC319E /* u2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 511603CF1E2F054E00AC319E /* u2f.h */; };
+		512995721E32E98400591797 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 512995711E32E98400591797 /* main.c */; };
+		5129957D1E32EAF000591797 /* libLibSoftU2F.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */; };
+		512995861E32EDC800591797 /* libu2f-host.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995851E32EDC800591797 /* libu2f-host.0.dylib */; };
+		512995881E32EDE200591797 /* libcmocka.0.4.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */; };
 		513DB1001E2EAEDB00ED737E /* libLibSoftU2F.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */; };
 		5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */; };
 		5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2FDriver.cpp */; };
@@ -66,6 +70,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		5129956D1E32E98400591797 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		514CF0E91E285CBC004203C6 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -80,6 +93,15 @@
 /* Begin PBXFileReference section */
 		511603CE1E2F054E00AC319E /* u2f_hid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = u2f_hid.h; path = SoftU2F/inc/u2f_hid.h; sourceTree = "<group>"; };
 		511603CF1E2F054E00AC319E /* u2f.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = u2f.h; path = SoftU2F/inc/u2f.h; sourceTree = "<group>"; };
+		5129956F1E32E98400591797 /* LibSoftU2FTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LibSoftU2FTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		512995711E32E98400591797 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		512995771E32E9A400591797 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		512995791E32EA8600591797 /* libcmocka.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcmocka.a; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.a; sourceTree = "<group>"; };
+		5129957B1E32EABC00591797 /* cmocka.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cmocka.h; path = ../../../../usr/local/Cellar/cmocka/1.1.0/include/cmocka.h; sourceTree = "<group>"; };
+		5129957E1E32EB0100591797 /* libu2f-host.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libu2f-host.a"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.a"; sourceTree = "<group>"; };
+		512995831E32EC3A00591797 /* u2f-host.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "u2f-host.h"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/include/u2f-host/u2f-host.h"; sourceTree = "<group>"; };
+		512995851E32EDC800591797 /* libu2f-host.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libu2f-host.0.dylib"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.0.dylib"; sourceTree = "<group>"; };
+		512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcmocka.0.4.0.dylib; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.0.4.0.dylib; sourceTree = "<group>"; };
 		5143B0AB1E282828005717AD /* SoftU2F.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoftU2F.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDriver.hpp; sourceTree = "<group>"; };
 		5143B0B01E282829005717AD /* SoftU2FDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDriver.cpp; sourceTree = "<group>"; };
@@ -97,6 +119,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5129956C1E32E98400591797 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				512995881E32EDE200591797 /* libcmocka.0.4.0.dylib in Frameworks */,
+				512995861E32EDC800591797 /* libu2f-host.0.dylib in Frameworks */,
+				5129957D1E32EAF000591797 /* libLibSoftU2F.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5143B0A71E282828005717AD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -131,6 +163,28 @@
 			name = inc;
 			sourceTree = "<group>";
 		};
+		512995701E32E98400591797 /* LibSoftU2FTests */ = {
+			isa = PBXGroup;
+			children = (
+				512995711E32E98400591797 /* main.c */,
+			);
+			path = LibSoftU2FTests;
+			sourceTree = "<group>";
+		};
+		512995761E32E9A400591797 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */,
+				512995851E32EDC800591797 /* libu2f-host.0.dylib */,
+				512995831E32EC3A00591797 /* u2f-host.h */,
+				5129957E1E32EB0100591797 /* libu2f-host.a */,
+				5129957B1E32EABC00591797 /* cmocka.h */,
+				512995791E32EA8600591797 /* libcmocka.a */,
+				512995771E32E9A400591797 /* XCTest.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		5143B0A11E282828005717AD = {
 			isa = PBXGroup;
 			children = (
@@ -138,7 +192,9 @@
 				514CF0E01E2857DD004203C6 /* LibSoftU2F */,
 				5143B0AD1E282828005717AD /* SoftU2F */,
 				514CF0EC1E285CBC004203C6 /* SoftU2FExample */,
+				512995701E32E98400591797 /* LibSoftU2FTests */,
 				5143B0AC1E282828005717AD /* Products */,
+				512995761E32E9A400591797 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -148,6 +204,7 @@
 				5143B0AB1E282828005717AD /* SoftU2F.kext */,
 				514CF0EB1E285CBC004203C6 /* SoftU2FExample */,
 				514CF0FF1E28604F004203C6 /* libLibSoftU2F.a */,
+				5129956F1E32E98400591797 /* LibSoftU2FTests */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -214,6 +271,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		5129956E1E32E98400591797 /* LibSoftU2FTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 512995751E32E98400591797 /* Build configuration list for PBXNativeTarget "LibSoftU2FTests" */;
+			buildPhases = (
+				5129956B1E32E98400591797 /* Sources */,
+				5129956C1E32E98400591797 /* Frameworks */,
+				5129956D1E32E98400591797 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LibSoftU2FTests;
+			productName = LibSoftU2FTests;
+			productReference = 5129956F1E32E98400591797 /* LibSoftU2FTests */;
+			productType = "com.apple.product-type.tool";
+		};
 		5143B0AA1E282828005717AD /* SoftU2F */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5143B0B51E282829005717AD /* Build configuration list for PBXNativeTarget "SoftU2F" */;
@@ -279,6 +353,10 @@
 						CreatedOnToolsVersion = 8.2.1;
 						ProvisioningStyle = Automatic;
 					};
+					5129956E1E32E98400591797 = {
+						CreatedOnToolsVersion = 8.2.1;
+						ProvisioningStyle = Automatic;
+					};
 					5143B0AA1E282828005717AD = {
 						CreatedOnToolsVersion = 8.2.1;
 						ProvisioningStyle = Automatic;
@@ -309,6 +387,7 @@
 				514CF0EA1E285CBC004203C6 /* SoftU2FExample */,
 				514CF0FE1E28604F004203C6 /* LibSoftU2F */,
 				510A056D1E2940DB005C3C0F /* All */,
+				5129956E1E32E98400591797 /* LibSoftU2FTests */,
 			);
 		};
 /* End PBXProject section */
@@ -324,6 +403,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5129956B1E32E98400591797 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				512995721E32E98400591797 /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5143B0A61E282828005717AD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -381,6 +468,34 @@
 		510A056F1E2940DB005C3C0F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		512995731E32E98400591797 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = "/usr/local/include/**";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/usr/local/Cellar/libu2f-host/1.1.3/lib",
+					/usr/local/Cellar/cmocka/1.1.0/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		512995741E32E98400591797 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = "/usr/local/include/**";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/usr/local/Cellar/libu2f-host/1.1.3/lib",
+					/usr/local/Cellar/cmocka/1.1.0/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -541,6 +656,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		512995751E32E98400591797 /* Build configuration list for PBXNativeTarget "LibSoftU2FTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				512995731E32E98400591797 /* Debug */,
+				512995741E32E98400591797 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		5143B0A51E282828005717AD /* Build configuration list for PBXProject "SoftU2F" */ = {
 			isa = XCConfigurationList;
