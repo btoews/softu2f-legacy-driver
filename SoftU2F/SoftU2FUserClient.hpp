@@ -51,23 +51,16 @@ protected:
                                   OSObject *target, void *reference) override;
 
   // User client methods
-  static IOReturn sOpenUserClient(SoftU2FUserClientClassName *target,
-                                  void *reference,
-                                  IOExternalMethodArguments *arguments);
+  static IOReturn sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn openUserClient(void);
 
-  static IOReturn sCloseUserClient(SoftU2FUserClientClassName *target,
-                                   void *reference,
-                                   IOExternalMethodArguments *arguments);
+  static IOReturn sCloseUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn closeUserClient(void);
 
-  static IOReturn sGetFrame(SoftU2FUserClientClassName *target, void *reference,
-                            IOExternalMethodArguments *arguments);
+  static IOReturn sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn getFrame(U2FHID_FRAME *frame, size_t *frameSize);
 
-  static IOReturn sSendFrame(SoftU2FUserClientClassName *target,
-                             void *reference,
-                             IOExternalMethodArguments *arguments);
+  static IOReturn sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
 };
 

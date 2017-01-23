@@ -30,23 +30,14 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
      */
     const IOExternalMethodDispatch
     SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sOpenUserClient,
-         0, 0, 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sCloseUserClient,
-         0, 0, 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sGetFrame, 0, 0,
-         0, sizeof(U2FHID_FRAME)},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0,
-         sizeof(U2FHID_FRAME), 0, 0},
+        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
+        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
+        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sGetFrame, 0, 0, 0, sizeof(U2FHID_FRAME)},
+        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
 };
 
-IOReturn SoftU2FUserClientClassName::externalMethod(
-    uint32_t selector, IOExternalMethodArguments *arguments,
-    IOExternalMethodDispatch *dispatch, OSObject *target, void *reference)
-
-{
-  IOLog("%s[%p]::%s(%d, %p, %p, %p, %p)\n", getName(), this, __FUNCTION__,
-        selector, arguments, dispatch, target, reference);
+IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
+  IOLog("%s[%p]::%s(%d, %p, %p, %p, %p)\n", getName(), this, __FUNCTION__, selector, arguments, dispatch, target, reference);
 
   if (selector < (uint32_t)kNumberOfMethods) {
     dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
@@ -56,8 +47,7 @@ IOReturn SoftU2FUserClientClassName::externalMethod(
     }
   }
 
-  return super::externalMethod(selector, arguments, dispatch, target,
-                               reference);
+  return super::externalMethod(selector, arguments, dispatch, target, reference);
 }
 
 // There are two forms of IOUserClient::initWithTask, the second of which
@@ -68,17 +58,14 @@ IOReturn SoftU2FUserClientClassName::externalMethod(
 // parameter.
 //
 // initWithTask is called as a result of the user process calling IOServiceOpen.
-bool SoftU2FUserClientClassName::initWithTask(task_t owningTask,
-                                              void *securityToken, UInt32 type,
-                                              OSDictionary *properties) {
+bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) {
   bool success;
 
   success = super::initWithTask(owningTask, securityToken, type, properties);
 
   // This IOLog must follow super::initWithTask because getName relies on the
   // superclass initialization.
-  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__,
-        owningTask, securityToken, (unsigned int)type, properties);
+  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
 
   fTask = owningTask;
   fProvider = NULL;
@@ -163,10 +150,8 @@ IOReturn SoftU2FUserClientClassName::clientDied(void) {
 // client has been marked
 // inactive and any further requests from the user process should be returned
 // with an error.
-bool SoftU2FUserClientClassName::willTerminate(IOService *provider,
-                                               IOOptionBits options) {
-  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider,
-        (long)options);
+bool SoftU2FUserClientClassName::willTerminate(IOService *provider, IOOptionBits options) {
+  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider, (long)options);
 
   return super::willTerminate(provider, options);
 }
@@ -175,11 +160,8 @@ bool SoftU2FUserClientClassName::willTerminate(IOService *provider,
 // notification
 // that a provider has been terminated, sent after recursing up the stack, in
 // leaf-to-root order.
-bool SoftU2FUserClientClassName::didTerminate(IOService *provider,
-                                              IOOptionBits options,
-                                              bool *defer) {
-  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider,
-        (long)options, defer);
+bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
+  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
 
   // If all pending I/O has been terminated, close our provider. If I/O is still
   // outstanding, set defer to true
@@ -230,8 +212,7 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   report->prepare();
 
   reportMap = report->map();
-  userReport = OSData::withBytes((void *)reportMap->getAddress(),
-                                 (unsigned int)reportMap->getLength());
+  userReport = OSData::withBytes((void *)reportMap->getAddress(), (unsigned int)reportMap->getLength());
 
   report->complete();
   reportMap->release();
@@ -239,9 +220,7 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   return fQueuedSetReports->setObject(userReport);
 }
 
-IOReturn SoftU2FUserClientClassName::sOpenUserClient(
-    SoftU2FUserClientClassName *target, void *reference,
-    IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClientClassName::sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->openUserClient();
 }
 
@@ -254,8 +233,7 @@ IOReturn SoftU2FUserClientClassName::openUserClient() {
     // called openUserClient without calling IOServiceOpen first. Or, the user
     // client could be
     // in the process of being terminated and is thus inactive.
-    IOLog("%s[%p]::%s()->kIOReturnNotAttached\n", getName(), this,
-          __FUNCTION__);
+    IOLog("%s[%p]::%s()->kIOReturnNotAttached\n", getName(), this, __FUNCTION__);
     return kIOReturnNotAttached;
   }
 
@@ -263,8 +241,7 @@ IOReturn SoftU2FUserClientClassName::openUserClient() {
     // The most common reason this open call will fail is because the provider
     // is already open
     // and it doesn't support being opened by more than one client at a time.
-    IOLog("%s[%p]::%s()->kIOReturnExclusiveAccess\n", getName(), this,
-          __FUNCTION__);
+    IOLog("%s[%p]::%s()->kIOReturnExclusiveAccess\n", getName(), this, __FUNCTION__);
     return kIOReturnExclusiveAccess;
   }
 
@@ -278,9 +255,7 @@ IOReturn SoftU2FUserClientClassName::openUserClient() {
   return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FUserClientClassName::sCloseUserClient(
-    SoftU2FUserClientClassName *target, void *reference,
-    IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClientClassName::sCloseUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->closeUserClient();
 }
 
@@ -300,20 +275,17 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
     // Return an error if we don't have a provider. This could happen if the
     // user process
     // called closeUserClient without calling IOServiceOpen first.
-    IOLog("%s[%p]::%s(): returning kIOReturnNotAttached.\n", getName(), this,
-          __FUNCTION__);
+    IOLog("%s[%p]::%s(): returning kIOReturnNotAttached.\n", getName(), this, __FUNCTION__);
     return kIOReturnNotAttached;
   }
 
   if (!fProvider->isOpen(this)) {
-    IOLog("%s[%p]::%s(): returning kIOReturnNotOpen.\n", getName(), this,
-          __FUNCTION__);
+    IOLog("%s[%p]::%s(): returning kIOReturnNotOpen.\n", getName(), this, __FUNCTION__);
     return kIOReturnNotOpen;
   }
 
   if (!fProvider->destroyUserClientDevice(this)) {
-    IOLog("%s[%p]::%s(): returning kIOReturnError.\n", getName(), this,
-          __FUNCTION__);
+    IOLog("%s[%p]::%s(): returning kIOReturnError.\n", getName(), this, __FUNCTION__);
     return kIOReturnError;
   }
 
@@ -323,15 +295,11 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
 }
 
 IOReturn
-SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *target,
-                                      void *reference,
-                                      IOExternalMethodArguments *arguments) {
-  return target->getFrame((U2FHID_FRAME *)arguments->structureOutput,
-                          (size_t *)&arguments->structureOutputSize);
+SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+  return target->getFrame((U2FHID_FRAME *)arguments->structureOutput, (size_t *)&arguments->structureOutputSize);
 }
 
-IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame,
-                                              size_t *frameSize) {
+IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame, size_t *frameSize) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (!fProvider)
@@ -362,15 +330,11 @@ IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame,
 }
 
 IOReturn
-SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target,
-                                       void *reference,
-                                       IOExternalMethodArguments *arguments) {
-  return target->sendFrame((U2FHID_FRAME *)arguments->structureInput,
-                           arguments->structureInputSize);
+SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+  return target->sendFrame((U2FHID_FRAME *)arguments->structureInput, arguments->structureInputSize);
 }
 
-IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame,
-                                               size_t frameSize) {
+IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (!fProvider)
