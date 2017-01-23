@@ -10,12 +10,13 @@
 
 // Initialize libSoftU2F before usage.
 softu2f_ctx *softu2f_init() {
-  softu2f_ctx *ctx;
+  softu2f_ctx *ctx = NULL;
+  io_service_t service = IO_OBJECT_NULL;
+  io_async_ref64_t asyncRef;
   kern_return_t ret;
-  io_service_t service;
+  CFRunLoopSourceRef runLoopSource;
 
-  service = IOServiceGetMatchingService(
-      kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
+  service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
   if (!service) {
     fprintf(stderr, "SoftU2F.kext not loaded.\n");
     return NULL;
@@ -28,28 +29,63 @@ softu2f_ctx *softu2f_init() {
   ret = IOServiceOpen(service, mach_task_self(), 0, &ctx->con);
   if (ret != KERN_SUCCESS) {
     fprintf(stderr, "Error connecting to SoftU2F.kext: %d\n", ret);
-    return NULL;
+    goto fail;
   }
   IOObjectRelease(service);
+  service = IO_OBJECT_NULL;
 
   // Initialize connection to user client.
-  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientOpen, NULL, 0,
-                                  NULL, NULL);
+  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
   if (ret != KERN_SUCCESS) {
     fprintf(stderr, "Unable to open user client: %d.\n", ret);
-    return NULL;
+    goto fail;
+  }
+
+  // Register to receive notifications when a new setReport is received.
+  ctx->notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
+  if (!ctx->notificationPort) {
+    fprintf(stderr, "Unable to create notification port.\n");
+    goto fail;
+  }
+
+  runLoopSource = IONotificationPortGetRunLoopSource(ctx->notificationPort);
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
+
+  asyncRef[kIOAsyncCalloutFuncIndex] = (uint64_t)_softu2f_async_callback;
+  asyncRef[kIOAsyncCalloutRefconIndex] = 0;
+
+  ret = IOConnectCallAsyncScalarMethod(ctx->con, kSoftU2FUserClientNotifyFrame, IONotificationPortGetMachPort(ctx->notificationPort), asyncRef, kIOAsyncCalloutCount, NULL, 0, NULL, NULL);
+  if (ret != KERN_SUCCESS) {
+    fprintf(stderr, "Unable to register notification port: 0x%08x\n", ret);
+    goto fail;
   }
 
   return ctx;
+
+fail:
+  if (service) IOObjectRelease(service);
+  if (ctx) softu2f_deinit(ctx);
+  return NULL;
+}
+
+// Callback called when a setReport is received by the driver.
+void _softu2f_async_callback(void *refcon, IOReturn result) {
+  fprintf(stderr, "setReport called.\n");
+
+  // Return execution to main run loop.
+  CFRunLoopStop(CFRunLoopGetMain());
 }
 
 // Cleanup after using libSoftU2F.
 void softu2f_deinit(softu2f_ctx *ctx) {
   kern_return_t ret;
 
+  // Destroy notification port.
+  if (ctx->notificationPort)
+    IONotificationPortDestroy(ctx->notificationPort);
+
   // Deinitialize connection to user client.
-  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientClose, NULL, 0,
-                                  NULL, NULL);
+  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
   if (ret != KERN_SUCCESS) {
     fprintf(stderr, "Unable to close user client: %d.\n", ret);
     return;
@@ -207,8 +243,9 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
                                     0, &frame, &frame_size);
     switch (ret) {
     case kIOReturnNoFrames:
-      // Polling interval is 5ms.
-      sleep(0.005);
+      // Wait until we're notified by kernel about a new setReport.
+      fprintf(stderr, "Waiting for setReport call.\n");
+      CFRunLoopRun();
       break;
 
     case kIOReturnSuccess:

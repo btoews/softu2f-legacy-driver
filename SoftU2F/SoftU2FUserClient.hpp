@@ -18,9 +18,11 @@
 class SoftU2FUserClientClassName : public IOUserClient {
   OSDeclareDefaultStructors(com_github_SoftU2FUserClient)
 
-      protected : SoftU2FDriverClassName *fProvider;
+protected:
+  SoftU2FDriverClassName *fProvider;
   task_t fTask;
-  OSArray *fQueuedSetReports;
+  OSArray *fQueuedSetReports = nullptr;
+  OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
 public:
@@ -28,16 +30,13 @@ public:
   virtual void stop(IOService *provider) override;
   virtual bool start(IOService *provider) override;
 
-  virtual bool initWithTask(task_t owningTask, void *securityToken, UInt32 type,
-                            OSDictionary *properties) override;
+  virtual bool initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) override;
 
   virtual IOReturn clientClose(void) override;
   virtual IOReturn clientDied(void) override;
 
-  virtual bool willTerminate(IOService *provider,
-                             IOOptionBits options) override;
-  virtual bool didTerminate(IOService *provider, IOOptionBits options,
-                            bool *defer) override;
+  virtual bool willTerminate(IOService *provider, IOOptionBits options) override;
+  virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
 
   virtual bool terminate(IOOptionBits options = 0) override;
   virtual bool finalize(IOOptionBits options) override;
@@ -45,10 +44,7 @@ public:
   virtual bool queueFrame(IOMemoryDescriptor *report);
 
 protected:
-  virtual IOReturn externalMethod(uint32_t selector,
-                                  IOExternalMethodArguments *arguments,
-                                  IOExternalMethodDispatch *dispatch,
-                                  OSObject *target, void *reference) override;
+  virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;
 
   // User client methods
   static IOReturn sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
@@ -62,6 +58,9 @@ protected:
 
   static IOReturn sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
+
+  static IOReturn sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
+  virtual IOReturn notifyFrame(io_user_reference_t *ref);
 };
 
 #endif /* SoftU2FUserClient_hpp */

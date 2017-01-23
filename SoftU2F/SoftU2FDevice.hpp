@@ -21,16 +21,16 @@ unsigned char const u2fhid_report_descriptor[] = {
     0x26, 0xFF, 0x00, //   Logical Maximum (255)
     0x75, 0x08,       //   Report Size (8)
     0x95, 0x40,       //   Report Count (64)
-    0x81, 0x02, //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null
-                //   Position)
-    0x09, 0x21, //   Usage (0x21)
-    0x15, 0x00, //   Logical Minimum (0)
+    0x81, 0x02,       //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null
+                      //   Position)
+    0x09, 0x21,       //   Usage (0x21)
+    0x15, 0x00,       //   Logical Minimum (0)
     0x26, 0xFF, 0x00, //   Logical Maximum (255)
     0x75, 0x08,       //   Report Size (8)
     0x95, 0x40,       //   Report Count (64)
-    0x91, 0x02, //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null
-                //   Position,Non-volatile)
-    0xC0,       // End Collection
+    0x91, 0x02,       //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null
+                      //   Position,Non-volatile)
+    0xC0,             // End Collection
 };
 
 #define SoftU2FDeviceClassName com_github_SoftU2FDevice
@@ -38,7 +38,8 @@ unsigned char const u2fhid_report_descriptor[] = {
 class SoftU2FDeviceClassName : public IOHIDDevice {
   OSDeclareDefaultStructors(com_github_SoftU2FDevice)
 
-      protected : SoftU2FUserClientClassName *dUserClient;
+protected:
+  SoftU2FUserClientClassName *dUserClient;
 
 public:
   virtual bool init(OSDictionary *dictionary = 0) override;
@@ -50,11 +51,8 @@ public:
   virtual OSString *newSerialNumberString() const override;
   virtual OSNumber *newVendorIDNumber() const override;
   virtual OSNumber *newProductIDNumber() const override;
-  virtual IOReturn
-  newReportDescriptor(IOMemoryDescriptor **descriptor) const override;
-  virtual IOReturn setReport(IOMemoryDescriptor *report,
-                             IOHIDReportType reportType,
-                             IOOptionBits options = 0) override;
+  virtual IOReturn newReportDescriptor(IOMemoryDescriptor **descriptor) const override;
+  virtual IOReturn setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options = 0) override;
 
   virtual bool setUserClient(IOService *userClient);
 };

@@ -41,6 +41,7 @@ struct softu2f_ctx {
   io_connect_t con;
   softu2f_hid_lock *lock;
   uint32_t next_cid;
+  IONotificationPortRef notificationPort;
 
   // Stop the run loop.
   bool shutdown;
@@ -59,6 +60,9 @@ softu2f_ctx *softu2f_init();
 // Deinitialization
 void softu2f_deinit(softu2f_ctx *ctx);
 
+// Callback called when a setReport is received by the driver.
+void _softu2f_async_callback(void *refcon, IOReturn result);
+
 // Read HID messages from device in loop.
 void softu2f_run(softu2f_ctx *ctx);
 
@@ -75,19 +79,16 @@ bool softu2f_hid_err_send(softu2f_ctx *ctx, uint32_t cid, uint8_t code);
 softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx);
 
 // Read an individual HID frame from the device into a HID message.
-bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
-                                U2FHID_FRAME *frame);
+bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg, U2FHID_FRAME *frame);
 
 // Handle a SYNC packet.
 bool softu2f_hid_msg_frame_handle_sync(softu2f_ctx *ctx, U2FHID_FRAME *frame);
 
 // Register a handler for a message type.
-void softu2f_hid_msg_handler_register(softu2f_ctx *ctx, uint8_t type,
-                                      softu2f_hid_message_handler handler);
+void softu2f_hid_msg_handler_register(softu2f_ctx *ctx, uint8_t type, softu2f_hid_message_handler handler);
 
 // Find a message handler for a message.
-softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx,
-                                                    softu2f_hid_message *msg);
+softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hid_message *msg);
 
 // Find a message handler for a message.
 softu2f_hid_message_handler

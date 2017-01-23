@@ -30,10 +30,11 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
      */
     const IOExternalMethodDispatch
     SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sGetFrame, 0, 0, 0, sizeof(U2FHID_FRAME)},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
+      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
+      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
+      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sGetFrame, 0, 0, 0, sizeof(U2FHID_FRAME)},
+      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
+      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
@@ -206,6 +207,7 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   if (!fQueuedSetReports)
     return false;
 
+  bool ret = false;
   OSData *userReport;
   IOMemoryMap *reportMap;
 
@@ -217,7 +219,14 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   report->complete();
   reportMap->release();
 
-  return fQueuedSetReports->setObject(userReport);
+  ret = fQueuedSetReports->setObject(userReport);
+
+  // Notify userland that we got a report.
+  if (fNotifyRef) {
+    sendAsyncResult64(*fNotifyRef, kIOReturnSuccess, NULL, 0);
+  }
+
+  return ret;
 }
 
 IOReturn SoftU2FUserClientClassName::sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
@@ -262,6 +271,11 @@ IOReturn SoftU2FUserClientClassName::sCloseUserClient(SoftU2FUserClientClassName
 IOReturn SoftU2FUserClientClassName::closeUserClient() {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
+  if (fNotifyRef) {
+    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
+    fNotifyRef = nullptr;
+  }
+
   if (fQueuedSetReports) {
     while (fQueuedSetReports->getCount()) {
       fQueuedSetReports->removeObject(0);
@@ -294,8 +308,7 @@ IOReturn SoftU2FUserClientClassName::closeUserClient() {
   return kIOReturnSuccess;
 }
 
-IOReturn
-SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->getFrame((U2FHID_FRAME *)arguments->structureOutput, (size_t *)&arguments->structureOutputSize);
 }
 
@@ -329,8 +342,7 @@ IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame, size_t *frame
   return kIOReturnSuccess;
 }
 
-IOReturn
-SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->sendFrame((U2FHID_FRAME *)arguments->structureInput, arguments->structureInputSize);
 }
 
@@ -349,4 +361,30 @@ IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frame
   } else {
     return kIOReturnError;
   }
+}
+
+IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+  return target->notifyFrame(arguments->asyncReference);
+}
+
+IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, ref);
+
+  if (!fProvider)
+    return kIOReturnNotAttached;
+  if (!fProvider->isOpen(this))
+    return kIOReturnNotOpen;
+
+  if (fNotifyRef) {
+    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
+    fNotifyRef = nullptr;
+  }
+
+  fNotifyRef = (OSAsyncReference64 *)IOMalloc(sizeof(OSAsyncReference64));
+  if (!fNotifyRef)
+    return kIOReturnNoMemory;
+
+  memcpy(fNotifyRef, ref, sizeof(OSAsyncReference64));
+
+  return kIOReturnSuccess;
 }
