@@ -41,7 +41,6 @@ struct softu2f_ctx {
   io_connect_t con;
   softu2f_hid_lock *lock;
   uint32_t next_cid;
-  IONotificationPortRef notificationPort;
 
   // Stop the run loop.
   bool shutdown;
@@ -59,9 +58,6 @@ softu2f_ctx *softu2f_init();
 
 // Deinitialization
 void softu2f_deinit(softu2f_ctx *ctx);
-
-// Callback called when a setReport is received by the driver.
-void _softu2f_async_callback(void *refcon, IOReturn result);
 
 // Read HID messages from device in loop.
 void softu2f_run(softu2f_ctx *ctx);
@@ -108,5 +104,11 @@ bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req);
 
 // Free a HID message and associated data.
 void softu2f_hid_msg_free(softu2f_hid_message *msg);
+
+// Callback called when a setReport is received by the driver.
+void _softu2f_async_callback(void *refcon, IOReturn result);
+
+// Block until setReport is called on the device.
+void softu2f_wait_for_set_report(softu2f_ctx *ctx);
 
 #endif /* SoftU2FClientInterface_h */

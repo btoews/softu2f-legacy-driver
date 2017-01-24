@@ -224,6 +224,8 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   // Notify userland that we got a report.
   if (fNotifyRef) {
     sendAsyncResult64(*fNotifyRef, kIOReturnSuccess, NULL, 0);
+    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
+    fNotifyRef = nullptr;
   }
 
   return ret;
