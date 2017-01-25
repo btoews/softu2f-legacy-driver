@@ -526,12 +526,12 @@ void softu2f_hid_msg_free(softu2f_hid_message *msg) {
 // Callback called when a setReport is received by the driver.
 void _softu2f_async_callback(void *refcon, IOReturn result) {
   // Return execution to main run loop.
-  CFRunLoopStop(CFRunLoopGetMain());
+  CFRunLoopStop(CFRunLoopGetCurrent());
 }
 
 void _softu2f_timer_callback(CFRunLoopTimerRef timer, void* info) {
   // Return execution to main run loop.
-  CFRunLoopStop(CFRunLoopGetMain());
+  CFRunLoopStop(CFRunLoopGetCurrent());
 }
 
 // Block until setReport is called on the device.
