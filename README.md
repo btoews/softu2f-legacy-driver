@@ -5,3 +5,4 @@ This is a toolset for implementing HID U2F tokens in software. This includes an 
 ## TODO
 
 * [ ] Upstream driver improvements to [foohid](https://github.com/unbit/foohid) instead of maintaining it here.
+* [ ] Use GCD instead of CFRunLoops
