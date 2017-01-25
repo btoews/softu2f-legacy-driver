@@ -12,8 +12,6 @@
 #define SoftU2FDriverClassName com_github_SoftU2FDriver
 #define kSoftU2FDriverClassName "com_github_SoftU2FDriver"
 
-#include "u2f_hid.h"
-
 // User client method dispatch selectors.
 enum {
   kSoftU2FUserClientOpen,

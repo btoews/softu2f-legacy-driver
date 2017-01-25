@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5143B0AA1E282828005717AD"
-               BuildableName = "SoftU2F.kext"
-               BlueprintName = "SoftU2F"
+               BlueprintIdentifier = "514CF0FE1E28604F004203C6"
+               BuildableName = "libsoftu2f.a"
+               BlueprintName = "softu2f"
                ReferencedContainer = "container:SoftU2F.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5143B0AA1E282828005717AD"
-            BuildableName = "SoftU2F.kext"
-            BlueprintName = "SoftU2F"
+            BlueprintIdentifier = "514CF0FE1E28604F004203C6"
+            BuildableName = "libsoftu2f.a"
+            BlueprintName = "softu2f"
             ReferencedContainer = "container:SoftU2F.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,9 +63,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5143B0AA1E282828005717AD"
-            BuildableName = "SoftU2F.kext"
-            BlueprintName = "SoftU2F"
+            BlueprintIdentifier = "514CF0FE1E28604F004203C6"
+            BuildableName = "libsoftu2f.a"
+            BlueprintName = "softu2f"
             ReferencedContainer = "container:SoftU2F.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

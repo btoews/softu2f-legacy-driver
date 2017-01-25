@@ -6,7 +6,8 @@
 //  Copyright © 2017 GitHub. All rights reserved.
 //
 
-#include "SoftU2FClientInterface.h"
+#include "softu2f.h"
+#include "internal.h"
 
 // Initialize libSoftU2F before usage.
 softu2f_ctx *softu2f_init() {
@@ -45,6 +46,11 @@ fail:
   if (service) IOObjectRelease(service);
   if (ctx) softu2f_deinit(ctx);
   return NULL;
+}
+
+// Shutdown the run loop.
+void softu2f_shutdown(softu2f_ctx *ctx) {
+    ctx->shutdown = true;
 }
 
 // Cleanup after using libSoftU2F.
@@ -151,6 +157,7 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
     }
 
     // Send frame.
+    debug_frame(&frame, false);
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame,
                                     &frame, HID_RPT_SIZE, NULL, NULL);
     if (ret != kIOReturnSuccess) {
@@ -259,6 +266,8 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
                                 U2FHID_FRAME *frame) {
   uint8_t *data;
   unsigned int ndata;
+
+  debug_frame(frame, true);
 
   switch (FRAME_TYPE(*frame)) {
   case TYPE_INIT:
@@ -415,18 +424,15 @@ softu2f_hid_msg_handler_default(softu2f_ctx *ctx, softu2f_hid_message *msg) {
 
 // Send an INIT response for a given request.
 bool softu2f_hid_msg_handle_init(softu2f_ctx *ctx, softu2f_hid_message *req) {
-  fprintf(stderr, "Sending Response: U2FHID_INIT\n");
-
   softu2f_hid_message resp;
-  U2FHID_INIT_RESP resp_data;
+  U2FHID_INIT_RESP resp_data = {0};
   U2FHID_INIT_REQ *req_data;
 
   req_data = (U2FHID_INIT_REQ *)CFDataGetBytePtr(req->data);
 
   resp.cmd = U2FHID_INIT;
   resp.bcnt = sizeof(U2FHID_INIT_RESP);
-  resp.data =
-      CFDataCreateWithBytesNoCopy(NULL, (uint8_t *)&resp_data, resp.bcnt, NULL);
+  resp.data = CFDataCreateWithBytesNoCopy(NULL, (uint8_t *)&resp_data, resp.bcnt, NULL);
 
   if (req->cid == CID_BROADCAST) {
     // Allocate a new CID for the client and tell them about it.
@@ -450,8 +456,6 @@ bool softu2f_hid_msg_handle_init(softu2f_ctx *ctx, softu2f_hid_message *req) {
 
 // Send a PING response for a given request.
 bool softu2f_hid_msg_handle_ping(softu2f_ctx *ctx, softu2f_hid_message *req) {
-  fprintf(stderr, "Sending Response: U2FHID_PING\n");
-
   softu2f_hid_message resp;
 
   resp.cid = req->cid;
@@ -464,8 +468,6 @@ bool softu2f_hid_msg_handle_ping(softu2f_ctx *ctx, softu2f_hid_message *req) {
 
 // Send a WINK response for a given request.
 bool softu2f_hid_msg_handle_wink(softu2f_ctx *ctx, softu2f_hid_message *req) {
-  fprintf(stderr, "Sending Response: U2FHID_WINK\n");
-
   softu2f_hid_message resp;
 
   resp.cid = req->cid;
@@ -478,8 +480,6 @@ bool softu2f_hid_msg_handle_wink(softu2f_ctx *ctx, softu2f_hid_message *req) {
 
 // Send a LOCK response for a given request.
 bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req) {
-  fprintf(stderr, "Sending Response: U2FHID_LOCK\n");
-
   softu2f_hid_message resp;
   uint8_t *duration;
   bool ret;
@@ -525,8 +525,6 @@ void softu2f_hid_msg_free(softu2f_hid_message *msg) {
 
 // Callback called when a setReport is received by the driver.
 void _softu2f_async_callback(void *refcon, IOReturn result) {
-  fprintf(stderr, "setReport called.\n");
-
   // Return execution to main run loop.
   CFRunLoopStop(CFRunLoopGetMain());
 }
@@ -566,4 +564,44 @@ done:
   CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
   CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), timer, kCFRunLoopDefaultMode);
   IONotificationPortDestroy(notificationPort);
+}
+
+void debug_frame(U2FHID_FRAME *frame, bool recv) {
+  uint8_t *data = NULL;
+  uint16_t dlen = 0;
+
+  if (recv) {
+    fprintf(stderr, "Received frame:\n");
+  } else {
+    fprintf(stderr, "Sending frame:\n");
+  }
+
+  fprintf(stderr, "\tCID: 0x%08x\n", frame->cid);
+
+  switch (FRAME_TYPE(*frame)) {
+    case TYPE_INIT:
+      fprintf(stderr, "\tTYPE: INIT\n");
+      fprintf(stderr, "\tCMD: 0x%02x\n", frame->init.cmd & ~TYPE_MASK);
+      fprintf(stderr, "\tBCNTH: 0x%02x\n", frame->init.bcnth);
+      fprintf(stderr, "\tBCNTL: 0x%02x\n", frame->init.bcntl);
+      data = frame->init.data;
+      dlen = HID_RPT_SIZE - 7;
+
+      break;
+
+    case TYPE_CONT:
+      fprintf(stderr, "\tTYPE: CONT\n");
+      fprintf(stderr, "\tSEQ: 0x%02x\n", frame->cont.seq);
+      data = frame->cont.data;
+      dlen = HID_RPT_SIZE - 5;
+
+      break;
+  }
+
+  fprintf(stderr, "\tDATA:");
+  for(int i = 0; i < dlen; i++) {
+    fprintf(stderr, " %02x", data[i]);
+  }
+
+  fprintf(stderr, "\n\n");
 }

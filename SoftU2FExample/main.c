@@ -6,7 +6,8 @@
 //  Copyright © 2017 GitHub. All rights reserved.
 //
 
-#include "SoftU2FClientInterface.h"
+#include "u2f_hid.h"
+#include "softu2f.h"
 #include <stdio.h>
 
 softu2f_ctx *ctx;
@@ -14,7 +15,7 @@ softu2f_ctx *ctx;
 void cleanup(int sig) {
   // Stop the run loop gracefully.
   if (ctx)
-    ctx->shutdown = true;
+      softu2f_shutdown(ctx);
 }
 
 bool handle_u2f_msg(softu2f_ctx *ctx, softu2f_hid_message *msg) {

@@ -35,7 +35,7 @@ extern "C" {
 
 #define U2F_POINT_UNCOMPRESSED  0x04    // Uncompressed point format
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t pointFormat;                // Point type
     uint8_t x[U2F_EC_KEY_SIZE];         // X-value
     uint8_t y[U2F_EC_KEY_SIZE];         // Y-value
@@ -55,12 +55,12 @@ typedef struct {
 #define U2F_REGISTER_ID         0x05    // Version 2 registration identifier
 #define U2F_REGISTER_HASH_ID    0x00    // Version 2 hash identintifier
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t chal[U2F_CHAL_SIZE];        // Challenge
     uint8_t appId[U2F_APPID_SIZE];      // Application id
 } U2F_REGISTER_REQ;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t registerId;                 // Registration identifier (U2F_REGISTER_ID_V2)
     U2F_EC_POINT pubKey;                // Generated public key
     uint8_t keyHandleLen;               // Length of key handle
@@ -78,14 +78,14 @@ typedef struct {
 #define U2F_AUTH_CHECK_ONLY     0x07    // Check only
 #define U2F_AUTH_FLAG_TUP       0x01    // Test of user presence set
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t chal[U2F_CHAL_SIZE];        // Challenge
     uint8_t appId[U2F_APPID_SIZE];      // Application id
     uint8_t keyHandleLen;               // Length of key handle
     uint8_t keyHandle[U2F_MAX_KH_SIZE]; // Key handle
 } U2F_AUTHENTICATE_REQ;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint8_t flags;                      // U2F_AUTH_FLAG_ values
     uint8_t ctr[U2F_CTR_SIZE];          // Counter field (big-endian)
     uint8_t sig[U2F_MAX_EC_SIG_SIZE];   // Signature

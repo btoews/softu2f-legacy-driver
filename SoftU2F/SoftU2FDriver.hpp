@@ -9,14 +9,15 @@
 #define SoftU2FDriver_hpp
 
 #include "UserKernelShared.h"
+#include "u2f_hid.h"
 #include <IOKit/IOService.h>
 
 class SoftU2FDriverClassName : public IOService {
   OSDeclareDefaultStructors(com_github_SoftU2FDriver)
 
-      public :
-      // IOService methods
-      virtual bool init(OSDictionary *dictionary = 0) override;
+public :
+  // IOService methods
+  virtual bool init(OSDictionary *dictionary = 0) override;
   virtual void free(void) override;
 
   virtual IOService *probe(IOService *provider, SInt32 *score) override;

@@ -30,17 +30,17 @@ extern "C" {
 #define TYPE_INIT               0x80    // Initial frame identifier
 #define TYPE_CONT               0x00    // Continuation frame identifier
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint32_t cid;                        // Channel identifier
-  union {
+  union __attribute__((packed)) {
     uint8_t type;                      // Frame type - b7 defines type
-    struct {
+    struct __attribute__((packed)) {
       uint8_t cmd;                     // Command - b7 set
       uint8_t bcnth;                   // Message byte count - high part
       uint8_t bcntl;                   // Message byte count - low part
       uint8_t data[HID_RPT_SIZE - 7];  // Data payload
     } init;
-    struct {
+    struct __attribute__((packed)) {
       uint8_t seq;                     // Sequence number - b7 cleared
       uint8_t data[HID_RPT_SIZE - 5];  // Data payload
     } cont;
@@ -82,11 +82,11 @@ typedef struct {
 #define INIT_NONCE_SIZE         8       // Size of channel initialization challenge
 #define CAPFLAG_WINK            0x01    // Device supports WINK command
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t nonce[INIT_NONCE_SIZE];       // Client application nonce
 } U2FHID_INIT_REQ;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t nonce[INIT_NONCE_SIZE];       // Client application nonce
   uint32_t cid;                         // Channel identifier  
   uint8_t versionInterface;             // Interface version
@@ -98,11 +98,11 @@ typedef struct {
 
 // U2FHID_SYNC command defines
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t nonce;                        // Client application nonce
 } U2FHID_SYNC_REQ;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t nonce;                        // Client application nonce
 } U2FHID_SYNC_RESP;
 
