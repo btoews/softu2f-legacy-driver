@@ -30,7 +30,7 @@ struct softu2f_hid_message {
 };
 
 // Initialization
-softu2f_ctx *softu2f_init();
+softu2f_ctx *softu2f_init(bool debug);
 
 // Shutdown the run loop.
 void softu2f_shutdown(softu2f_ctx *ctx);

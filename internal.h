@@ -28,6 +28,9 @@ struct softu2f_ctx {
     // Stop the run loop.
     bool shutdown;
 
+    // Verbose logging.
+    bool debug;
+
     // Handlers registered for HID msg types.
     softu2f_hid_message_handler ping_handler;
     softu2f_hid_message_handler msg_handler;
@@ -72,7 +75,9 @@ void _softu2f_async_callback(void *refcon, IOReturn result);
 // Block until setReport is called on the device.
 void softu2f_wait_for_set_report(softu2f_ctx *ctx);
 
-void debug_frame(U2FHID_FRAME *frame, bool recv);
+void softu2f_log(softu2f_ctx *ctx, char *fmt, ...);
+
+void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv);
 
 
 #endif /* internal_h */

@@ -10,24 +10,26 @@
 #include "internal.h"
 
 // Initialize libSoftU2F before usage.
-softu2f_ctx *softu2f_init() {
+softu2f_ctx *softu2f_init(bool debug) {
   softu2f_ctx *ctx = NULL;
   io_service_t service = IO_OBJECT_NULL;
   kern_return_t ret;
 
   service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
   if (!service) {
-    fprintf(stderr, "SoftU2F.kext not loaded.\n");
+    softu2f_log(ctx, "SoftU2F.kext not loaded.\n");
     return NULL;
   }
 
   // Allocate a new context.
   ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
 
+  ctx->debug = debug;
+
   // Open connection to user client.
   ret = IOServiceOpen(service, mach_task_self(), 0, &ctx->con);
   if (ret != KERN_SUCCESS) {
-    fprintf(stderr, "Error connecting to SoftU2F.kext: %d\n", ret);
+    softu2f_log(ctx, "Error connecting to SoftU2F.kext: %d\n", ret);
     goto fail;
   }
   IOObjectRelease(service);
@@ -53,7 +55,7 @@ void softu2f_deinit(softu2f_ctx *ctx) {
   // Close user client connection.
   ret = IOServiceClose(ctx->con);
   if (ret != KERN_SUCCESS) {
-    fprintf(stderr, "Error closing connection to SoftU2F.kext: %d.\n", ret);
+    softu2f_log(ctx, "Error closing connection to SoftU2F.kext: %d.\n", ret);
     return;
   }
 
@@ -78,10 +80,10 @@ void softu2f_run(softu2f_ctx *ctx) {
 
       if (handler) {
         if (!handler(ctx, hidmsg)) {
-          fprintf(stderr, "Error handling HID message\n");
+          softu2f_log(ctx, "Error handling HID message\n");
         }
       } else {
-        fprintf(stderr, "No handler for HID message\n");
+        softu2f_log(ctx, "No handler for HID message\n");
         softu2f_hid_err_send(ctx, hidmsg->cid, ERR_OTHER);
       }
 
@@ -143,11 +145,11 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
     }
 
     // Send frame.
-    debug_frame(&frame, false);
+    debug_frame(ctx, &frame, false);
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame,
                                     &frame, HID_RPT_SIZE, NULL, NULL);
     if (ret != kIOReturnSuccess) {
-      fprintf(stderr, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n",
+      softu2f_log(ctx, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n",
               ret);
       return false;
     }
@@ -190,7 +192,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
 
   msg = (softu2f_hid_message *)calloc(1, sizeof(softu2f_hid_message));
   if (!msg) {
-    fprintf(stderr, "No memory for new message.\n");
+    softu2f_log(ctx, "No memory for new message.\n");
     return NULL;
   }
 
@@ -209,7 +211,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
 
     case kIOReturnSuccess:
       if (frame_size != HID_RPT_SIZE) {
-        fprintf(stderr, "bad frame\n");
+        softu2f_log(ctx, "bad frame\n");
         goto done;
       }
 
@@ -225,7 +227,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
       break;
 
     default:
-      fprintf(stderr, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n",
+      softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n",
               ret);
       goto done;
     }
@@ -253,7 +255,7 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
   uint8_t *data;
   unsigned int ndata;
 
-  debug_frame(frame, true);
+  debug_frame(ctx, frame, true);
 
   switch (FRAME_TYPE(*frame)) {
   case TYPE_INIT:
@@ -264,7 +266,7 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
 
     if (msg->buf) {
       softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
-      fprintf(stderr, "init frame out of order. ignoring.\n");
+      softu2f_log(ctx, "init frame out of order. ignoring.\n");
       return true;
     }
 
@@ -285,17 +287,17 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
 
   case TYPE_CONT:
     if (!msg->buf) {
-      fprintf(stderr, "cont frame out of order. ignoring\n");
+      softu2f_log(ctx, "cont frame out of order. ignoring\n");
       return true;
     }
 
     if (frame->cid != msg->cid) {
-      fprintf(stderr, "spurious CNT from other channel. ignoring.\n");
+      softu2f_log(ctx, "spurious CNT from other channel. ignoring.\n");
       return true;
     }
 
     if (FRAME_SEQ(*frame) != msg->lastSeq++) {
-      fprintf(stderr, "bad seq in cont frame (%d). bailing\n", FRAME_SEQ(*frame));
+      softu2f_log(ctx, "bad seq in cont frame (%d). bailing\n", FRAME_SEQ(*frame));
       softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
       return false;
     }
@@ -311,7 +313,7 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
     break;
 
   default:
-    fprintf(stderr, "unknown frame type: 0x%08x\n", FRAME_TYPE(*frame));
+    softu2f_log(ctx, "unknown frame type: 0x%08x\n", FRAME_TYPE(*frame));
     return false;
   }
 
@@ -540,7 +542,7 @@ void softu2f_wait_for_set_report(softu2f_ctx *ctx) {
 
   ret = IOConnectCallAsyncScalarMethod(ctx->con, kSoftU2FUserClientNotifyFrame, IONotificationPortGetMachPort(notificationPort), asyncRef, kIOAsyncCalloutCount, NULL, 0, NULL, NULL);
   if (ret != KERN_SUCCESS) {
-    fprintf(stderr, "Unable to register notification port: 0x%08x\n", ret);
+    softu2f_log(ctx, "Unable to register notification port: 0x%08x\n", ret);
     goto done;
   }
 
@@ -552,42 +554,51 @@ done:
   IONotificationPortDestroy(notificationPort);
 }
 
-void debug_frame(U2FHID_FRAME *frame, bool recv) {
+void softu2f_log(softu2f_ctx *ctx, char *fmt, ...) {
+  if (ctx->debug) {
+    va_list argp;
+    va_start(argp, fmt);
+    vfprintf(stderr, fmt, argp);
+    va_end(argp);
+  }
+}
+
+void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
   uint8_t *data = NULL;
   uint16_t dlen = 0;
 
   if (recv) {
-    fprintf(stderr, "Received frame:\n");
+    softu2f_log(ctx, "Received frame:\n");
   } else {
-    fprintf(stderr, "Sending frame:\n");
+    softu2f_log(ctx, "Sending frame:\n");
   }
 
-  fprintf(stderr, "\tCID: 0x%08x\n", frame->cid);
+  softu2f_log(ctx, "\tCID: 0x%08x\n", frame->cid);
 
   switch (FRAME_TYPE(*frame)) {
     case TYPE_INIT:
-      fprintf(stderr, "\tTYPE: INIT\n");
-      fprintf(stderr, "\tCMD: 0x%02x\n", frame->init.cmd & ~TYPE_MASK);
-      fprintf(stderr, "\tBCNTH: 0x%02x\n", frame->init.bcnth);
-      fprintf(stderr, "\tBCNTL: 0x%02x\n", frame->init.bcntl);
+      softu2f_log(ctx, "\tTYPE: INIT\n");
+      softu2f_log(ctx, "\tCMD: 0x%02x\n", frame->init.cmd & ~TYPE_MASK);
+      softu2f_log(ctx, "\tBCNTH: 0x%02x\n", frame->init.bcnth);
+      softu2f_log(ctx, "\tBCNTL: 0x%02x\n", frame->init.bcntl);
       data = frame->init.data;
       dlen = HID_RPT_SIZE - 7;
 
       break;
 
     case TYPE_CONT:
-      fprintf(stderr, "\tTYPE: CONT\n");
-      fprintf(stderr, "\tSEQ: 0x%02x\n", frame->cont.seq);
+      softu2f_log(ctx, "\tTYPE: CONT\n");
+      softu2f_log(ctx, "\tSEQ: 0x%02x\n", frame->cont.seq);
       data = frame->cont.data;
       dlen = HID_RPT_SIZE - 5;
 
       break;
   }
 
-  fprintf(stderr, "\tDATA:");
+  softu2f_log(ctx, "\tDATA:");
   for(int i = 0; i < dlen; i++) {
-    fprintf(stderr, " %02x", data[i]);
+    softu2f_log(ctx, " %02x", data[i]);
   }
 
-  fprintf(stderr, "\n\n");
+  softu2f_log(ctx, "\n\n");
 }
