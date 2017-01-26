@@ -33,13 +33,6 @@ softu2f_ctx *softu2f_init() {
   IOObjectRelease(service);
   service = IO_OBJECT_NULL;
 
-  // Initialize connection to user client.
-  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientOpen, NULL, 0, NULL, NULL);
-  if (ret != KERN_SUCCESS) {
-    fprintf(stderr, "Unable to open user client: %d.\n", ret);
-    goto fail;
-  }
-
   return ctx;
 
 fail:
@@ -56,13 +49,6 @@ void softu2f_shutdown(softu2f_ctx *ctx) {
 // Cleanup after using libSoftU2F.
 void softu2f_deinit(softu2f_ctx *ctx) {
   kern_return_t ret;
-
-  // Deinitialize connection to user client.
-  ret = IOConnectCallScalarMethod(ctx->con, kSoftU2FUserClientClose, NULL, 0, NULL, NULL);
-  if (ret != KERN_SUCCESS) {
-    fprintf(stderr, "Unable to close user client: %d.\n", ret);
-    return;
-  }
 
   // Close user client connection.
   ret = IOServiceClose(ctx->con);

@@ -120,7 +120,7 @@
 		512995831E32EC3A00591797 /* u2f-host.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "u2f-host.h"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/include/u2f-host/u2f-host.h"; sourceTree = "<group>"; };
 		512995851E32EDC800591797 /* libu2f-host.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libu2f-host.0.dylib"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.0.dylib"; sourceTree = "<group>"; };
 		512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcmocka.0.4.0.dylib; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.0.4.0.dylib; sourceTree = "<group>"; };
-		5143B0AB1E282828005717AD /* Driver.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Driver.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		5143B0AB1E282828005717AD /* softu2f.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = softu2f.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDriver.hpp; sourceTree = "<group>"; };
 		5143B0B01E282829005717AD /* SoftU2FDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDriver.cpp; sourceTree = "<group>"; };
 		5143B0B21E282829005717AD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -212,7 +212,7 @@
 		5143B0AC1E282828005717AD /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5143B0AB1E282828005717AD /* Driver.kext */,
+				5143B0AB1E282828005717AD /* softu2f.kext */,
 				514CF0EB1E285CBC004203C6 /* Example */,
 				514CF0FF1E28604F004203C6 /* libsoftu2f.a */,
 				5129956F1E32E98400591797 /* Tests */,
@@ -315,7 +315,7 @@
 			);
 			name = Driver;
 			productName = SoftU2F;
-			productReference = 5143B0AB1E282828005717AD /* Driver.kext */;
+			productReference = 5143B0AB1E282828005717AD /* softu2f.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
 		514CF0EA1E285CBC004203C6 /* Example */ = {
@@ -631,7 +631,7 @@
 				MODULE_NAME = com.github.SoftU2F;
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.github.SoftU2F;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = softu2f;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -646,7 +646,7 @@
 				MODULE_NAME = com.github.SoftU2F;
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.github.SoftU2F;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = softu2f;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -695,6 +695,7 @@
 				51213ED11E3919EB005454E0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		512995751E32E98400591797 /* Build configuration list for PBXNativeTarget "Tests" */ = {
 			isa = XCConfigurationList;

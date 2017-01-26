@@ -30,8 +30,6 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
      */
     const IOExternalMethodDispatch
     SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sOpenUserClient, 0, 0, 0, 0},
-      {(IOExternalMethodAction)&SoftU2FUserClientClassName::sCloseUserClient, 0, 0, 0, 0},
       {(IOExternalMethodAction)&SoftU2FUserClientClassName::sGetFrame, 0, 0, 0, sizeof(U2FHID_FRAME)},
       {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
       {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
@@ -86,6 +84,11 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
   if (!fProvider)
     return false;
 
+  IOService *device = fProvider->userClientDevice(this);
+  if (!device) {
+      return false;
+  }
+
   return super::start(provider);
 }
 
@@ -101,9 +104,23 @@ void SoftU2FUserClientClassName::stop(IOService *provider) {
 IOReturn SoftU2FUserClientClassName::clientClose(void) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
-  // Defensive coding in case the user process called IOServiceClose
-  // without calling closeUserClient first.
-  (void)closeUserClient();
+  if (fNotifyRef) {
+    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
+    fNotifyRef = nullptr;
+  }
+
+  if (fQueuedSetReports) {
+    while (fQueuedSetReports->getCount()) {
+      fQueuedSetReports->removeObject(0);
+    }
+
+    fQueuedSetReports->release();
+    fQueuedSetReports = nullptr;
+  }
+
+  if (!fProvider->destroyUserClientDevice(this)) {
+    return kIOReturnError;
+  }
 
   // Inform the user process that this user client is no longer available. This
   // will also cause the
@@ -164,10 +181,6 @@ bool SoftU2FUserClientClassName::willTerminate(IOService *provider, IOOptionBits
 bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
   IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
 
-  // If all pending I/O has been terminated, close our provider. If I/O is still
-  // outstanding, set defer to true
-  // and the user client will not have stop called on it.
-  closeUserClient();
   *defer = false;
 
   return super::didTerminate(provider, options, defer);
@@ -231,85 +244,6 @@ bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
   return ret;
 }
 
-IOReturn SoftU2FUserClientClassName::sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
-  return target->openUserClient();
-}
-
-IOReturn SoftU2FUserClientClassName::openUserClient() {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
-
-  if (fProvider == NULL || isInactive()) {
-    // Return an error if we don't have a provider. This could happen if the
-    // user process
-    // called openUserClient without calling IOServiceOpen first. Or, the user
-    // client could be
-    // in the process of being terminated and is thus inactive.
-    IOLog("%s[%p]::%s()->kIOReturnNotAttached\n", getName(), this, __FUNCTION__);
-    return kIOReturnNotAttached;
-  }
-
-  if (!fProvider->open(this)) {
-    // The most common reason this open call will fail is because the provider
-    // is already open
-    // and it doesn't support being opened by more than one client at a time.
-    IOLog("%s[%p]::%s()->kIOReturnExclusiveAccess\n", getName(), this, __FUNCTION__);
-    return kIOReturnExclusiveAccess;
-  }
-
-  IOService *device = fProvider->userClientDevice(this);
-  if (!device) {
-    IOLog("%s[%p]::%s()->kIOReturnError\n", getName(), this, __FUNCTION__);
-    return kIOReturnError;
-  }
-
-  IOLog("%s[%p]::%s()->kIOReturnSuccess\n", getName(), this, __FUNCTION__);
-  return kIOReturnSuccess;
-}
-
-IOReturn SoftU2FUserClientClassName::sCloseUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
-  return target->closeUserClient();
-}
-
-IOReturn SoftU2FUserClientClassName::closeUserClient() {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
-
-  if (fNotifyRef) {
-    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
-    fNotifyRef = nullptr;
-  }
-
-  if (fQueuedSetReports) {
-    while (fQueuedSetReports->getCount()) {
-      fQueuedSetReports->removeObject(0);
-    }
-
-    fQueuedSetReports->release();
-    fQueuedSetReports = nullptr;
-  }
-
-  if (!fProvider) {
-    // Return an error if we don't have a provider. This could happen if the
-    // user process
-    // called closeUserClient without calling IOServiceOpen first.
-    IOLog("%s[%p]::%s(): returning kIOReturnNotAttached.\n", getName(), this, __FUNCTION__);
-    return kIOReturnNotAttached;
-  }
-
-  if (!fProvider->isOpen(this)) {
-    IOLog("%s[%p]::%s(): returning kIOReturnNotOpen.\n", getName(), this, __FUNCTION__);
-    return kIOReturnNotOpen;
-  }
-
-  if (!fProvider->destroyUserClientDevice(this)) {
-    IOLog("%s[%p]::%s(): returning kIOReturnError.\n", getName(), this, __FUNCTION__);
-    return kIOReturnError;
-  }
-
-  // Make sure we're the one who opened our provider before we tell it to close.
-  fProvider->close(this);
-  return kIOReturnSuccess;
-}
-
 IOReturn SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->getFrame((U2FHID_FRAME *)arguments->structureOutput, (size_t *)&arguments->structureOutputSize);
 }
@@ -319,8 +253,6 @@ IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame, size_t *frame
 
   if (!fProvider)
     return kIOReturnNotAttached;
-  if (!fProvider->isOpen(this))
-    return kIOReturnNotOpen;
 
   OSData *report;
   OSObject *obj;
@@ -353,8 +285,6 @@ IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frame
 
   if (!fProvider)
     return kIOReturnNotAttached;
-  if (!fProvider->isOpen(this))
-    return kIOReturnNotOpen;
   if (frameSize != HID_RPT_SIZE)
     return kIOReturnBadArgument;
 
@@ -374,8 +304,6 @@ IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
 
   if (!fProvider)
     return kIOReturnNotAttached;
-  if (!fProvider->isOpen(this))
-    return kIOReturnNotOpen;
 
   if (fNotifyRef) {
     IOFree(fNotifyRef, sizeof(OSAsyncReference64));

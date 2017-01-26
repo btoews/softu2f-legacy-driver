@@ -47,12 +47,6 @@ protected:
   virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;
 
   // User client methods
-  static IOReturn sOpenUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
-  virtual IOReturn openUserClient(void);
-
-  static IOReturn sCloseUserClient(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
-  virtual IOReturn closeUserClient(void);
-
   static IOReturn sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn getFrame(U2FHID_FRAME *frame, size_t *frameSize);
 
