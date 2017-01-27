@@ -12,11 +12,17 @@
 #include <cmocka.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
+#include "softu2f.h"
 #include "u2f-host.h"
 #include "u2f_hid.h"
 #include "LibSoftU2FTests.h"
 
+pthread_t run_thread = NULL;
+softu2f_ctx *ctx = NULL;
 u2fh_devs *devs = NULL;
+
+void *run_thread_main(void* arg);
 
 // Test INIT request/response.
 void test_init(void **state) {
@@ -75,6 +81,14 @@ int setup(void **state) {
   int rc;
   unsigned int max_dev_idx = 0;
 
+  // Init softu2f device.
+  ctx = softu2f_init(false);
+  rc = pthread_create(&run_thread, NULL, run_thread_main, NULL);
+  if (rc) {
+    printf("Error starting run thread: %d\n", rc);
+    return -1;
+  }
+
   // Init libu2f-host.
   rc = u2fh_global_init(0); // U2FH_DEBUG for debugging.
   if (rc != U2FH_OK) {
@@ -114,8 +128,16 @@ int teardown(void **state) {
   devs = NULL;
 
   u2fh_global_done();
+
+  softu2f_shutdown(ctx);
+  pthread_join(run_thread, NULL);
   
   return 0;
+}
+
+void *run_thread_main(void* arg) {
+  softu2f_run(ctx);
+  return NULL;
 }
 
 u2fdevice *get_device() {
