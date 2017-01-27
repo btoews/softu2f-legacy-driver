@@ -71,10 +71,6 @@ void test_really_long_ping(void **state) {
 // Test LOCK request/response.
 void test_lock(void **state) {}
 
-void test_register(void **state) {
-  u2fh_register(devs, <#const char *challenge#>, <#const char *origin#>, <#char **response#>, <#u2fh_cmdflags flags#>)
-}
-
 int setup(void **state) {
   int rc;
   unsigned int max_dev_idx = 0;

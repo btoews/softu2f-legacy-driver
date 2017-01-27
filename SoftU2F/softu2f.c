@@ -117,7 +117,7 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   uint8_t *src_end;
   uint8_t *dst;
   uint8_t *dst_end;
-  uint8_t seq;
+  uint8_t seq = 0x00;
   U2FHID_FRAME frame;
   kern_return_t ret;
   struct timespec duration;
