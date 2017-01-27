@@ -28,7 +28,7 @@ bool handle_u2f_msg(softu2f_ctx *ctx, softu2f_hid_message *msg) {
 
 int main(int argc, const char *argv[]) {
   printf("Initializing connection to driver.\n");
-  ctx = softu2f_init();
+  ctx = softu2f_init(false);
 
   if (!ctx) {
     printf("Error initializing connection to driver.\n");

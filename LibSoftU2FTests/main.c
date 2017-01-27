@@ -35,16 +35,6 @@ void test_init(void **state) {
   assert_int_equal(CAPFLAG_WINK, resp->capFlags);
 }
 
-// Test CID gets incremented between clients.
-void test_cid_increment(void **state) {
-  uint32_t cid_was = get_device()->cid;
-
-  assert_int_equal(0, teardown(state));
-  assert_int_equal(0, setup(state));
-
-  assert_int_equal(cid_was + 1, get_device()->cid);
-}
-
 // Test basic PING request/response.
 void test_ping(void **state) {
   unsigned char data[] = "hello";
@@ -67,15 +57,30 @@ void test_long_ping(void **state) {
   assert_string_equal(data, resp);
 }
 
+// Test long PING — bitshifting is hard :'(
+void test_really_long_ping(void **state) {
+    unsigned char data[] = "9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c";
+    unsigned char resp[1024];
+    size_t resplen = sizeof(resp);
+    u2fh_sendrecv(devs, 0, U2FHID_PING, data, sizeof(data), resp, &resplen);
+
+    assert_int_equal(sizeof(data), resplen);
+    assert_string_equal(data, resp);
+}
+
 // Test LOCK request/response.
 void test_lock(void **state) {}
+
+void test_register(void **state) {
+  u2fh_register(devs, <#const char *challenge#>, <#const char *origin#>, <#char **response#>, <#u2fh_cmdflags flags#>)
+}
 
 int setup(void **state) {
   int rc;
   unsigned int max_dev_idx = 0;
 
   // Init libu2f-host.
-  rc = u2fh_global_init(U2FH_DEBUG); // U2FH_DEBUG for debugging.
+  rc = u2fh_global_init(0); // U2FH_DEBUG for debugging.
   if (rc != U2FH_OK) {
     printf("Error initializing libu2f-host: %s\n", u2fh_strerror(rc));
     return -1;
@@ -125,17 +130,17 @@ u2fdevice *get_device() {
     dev = dev->next;
   }
 
+  assert_true(0);
   return NULL;
 }
 
 int main(void) {
   const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_init),
-//    cmocka_unit_test(test_cid_increment),
-//    cmocka_unit_test(test_ping),
-//    cmocka_unit_test(test_long_ping),
-//    cmocka_unit_test(test_wink),
-//    cmocka_unit_test(test_lock),
+    cmocka_unit_test(test_ping),
+    cmocka_unit_test(test_long_ping),
+    cmocka_unit_test(test_really_long_ping),
+    cmocka_unit_test(test_lock),
   };
 
   return cmocka_run_group_tests(tests, setup, teardown);

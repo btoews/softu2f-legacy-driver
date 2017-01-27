@@ -120,6 +120,7 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   uint8_t seq;
   U2FHID_FRAME frame;
   kern_return_t ret;
+  struct timespec duration;
 
   memset(&frame, 0, HID_RPT_SIZE);
 
@@ -127,7 +128,7 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   frame.cid = msg->cid;
   frame.type |= TYPE_INIT;
   frame.init.cmd |= msg->cmd;
-  frame.init.bcnth = CFDataGetLength(msg->data) << 8;
+  frame.init.bcnth = CFDataGetLength(msg->data) >> 8;
   frame.init.bcntl = CFDataGetLength(msg->data) & 0xff;
 
   src = (uint8_t *)CFDataGetBytePtr(msg->data);
@@ -159,7 +160,9 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
       break;
 
     // Polling interval is 5ms.
-    sleep(0.005);
+    duration.tv_sec = 0;
+    duration.tv_nsec = 500000L;
+    nanosleep(&duration, NULL);
 
     // Cont frame.
     dst = frame.cont.data;
