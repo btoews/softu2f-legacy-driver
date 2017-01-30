@@ -36,11 +36,10 @@
 		514CF0EE1E285CBC004203C6 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 514CF0ED1E285CBC004203C6 /* main.c */; };
 		514CF1031E286052004203C6 /* softu2f.c in Sources */ = {isa = PBXBuildFile; fileRef = 514CF0E11E285849004203C6 /* softu2f.c */; };
 		514CF1041E286055004203C6 /* softu2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 514CF0E21E285849004203C6 /* softu2f.h */; };
-		514CF1061E286122004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
-		514CF1071E286123004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
+		514CF1061E286122004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		515BE6F21E3FCA7200829539 /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 51DE79281E3FAE820066EC0F /* internal.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		515FA9B01E36D6BF00AF54CC /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
 		515FA9B11E36EA3400AF54CC /* libcmocka.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995791E32EA8600591797 /* libcmocka.a */; };
-		51DE79291E3FAE820066EC0F /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 51DE79281E3FAE820066EC0F /* internal.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -266,7 +265,6 @@
 				514CF0C01E2832C6004203C6 /* SoftU2FDevice.hpp in Headers */,
 				5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */,
 				514CF1061E286122004203C6 /* UserKernelShared.h in Headers */,
-				51DE79291E3FAE820066EC0F /* internal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,8 +272,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				515BE6F21E3FCA7200829539 /* internal.h in Headers */,
 				514CF1041E286055004203C6 /* softu2f.h in Headers */,
-				514CF1071E286123004203C6 /* UserKernelShared.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
