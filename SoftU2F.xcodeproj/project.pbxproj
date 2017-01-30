@@ -24,7 +24,6 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		51213EDD1E391A3D005454E0 /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 51213EDA1E391A2F005454E0 /* internal.h */; };
 		512995721E32E98400591797 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 512995711E32E98400591797 /* main.c */; };
 		512995861E32EDC800591797 /* libu2f-host.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995851E32EDC800591797 /* libu2f-host.0.dylib */; };
 		513DB1001E2EAEDB00ED737E /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
@@ -41,6 +40,7 @@
 		514CF1071E286123004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; };
 		515FA9B01E36D6BF00AF54CC /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
 		515FA9B11E36EA3400AF54CC /* libcmocka.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995791E32EA8600591797 /* libcmocka.a */; };
+		51DE79291E3FAE820066EC0F /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 51DE79281E3FAE820066EC0F /* internal.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,7 +110,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		51213EDA1E391A2F005454E0 /* internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = internal.h; sourceTree = "<group>"; };
 		5129956F1E32E98400591797 /* Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		512995711E32E98400591797 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		512995771E32E9A400591797 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
@@ -135,6 +134,7 @@
 		514CF0ED1E285CBC004203C6 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		514CF0FF1E28604F004203C6 /* libsoftu2f.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libsoftu2f.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		515FA9B21E3795E600AF54CC /* LibSoftU2FTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LibSoftU2FTests.h; sourceTree = "<group>"; };
+		51DE79281E3FAE820066EC0F /* internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = internal.h; path = SoftU2F/internal.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -241,7 +241,7 @@
 			children = (
 				514CF0E11E285849004203C6 /* softu2f.c */,
 				514CF0E21E285849004203C6 /* softu2f.h */,
-				51213EDA1E391A2F005454E0 /* internal.h */,
+				51DE79281E3FAE820066EC0F /* internal.h */,
 			);
 			name = libsoftu2f;
 			sourceTree = "<group>";
@@ -266,6 +266,7 @@
 				514CF0C01E2832C6004203C6 /* SoftU2FDevice.hpp in Headers */,
 				5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */,
 				514CF1061E286122004203C6 /* UserKernelShared.h in Headers */,
+				51DE79291E3FAE820066EC0F /* internal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,7 +274,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				51213EDD1E391A3D005454E0 /* internal.h in Headers */,
 				514CF1041E286055004203C6 /* softu2f.h in Headers */,
 				514CF1071E286123004203C6 /* UserKernelShared.h in Headers */,
 			);
