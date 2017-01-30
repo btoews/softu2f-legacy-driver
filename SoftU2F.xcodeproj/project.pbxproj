@@ -25,7 +25,6 @@
 
 /* Begin PBXBuildFile section */
 		512995721E32E98400591797 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 512995711E32E98400591797 /* main.c */; };
-		512995861E32EDC800591797 /* libu2f-host.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995851E32EDC800591797 /* libu2f-host.0.dylib */; };
 		513DB1001E2EAEDB00ED737E /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
 		5143B0AF1E282829005717AD /* SoftU2FDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */; };
 		5143B0B11E282829005717AD /* SoftU2FDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5143B0B01E282829005717AD /* SoftU2FDriver.cpp */; };
@@ -38,8 +37,9 @@
 		514CF1041E286055004203C6 /* softu2f.h in Headers */ = {isa = PBXBuildFile; fileRef = 514CF0E21E285849004203C6 /* softu2f.h */; };
 		514CF1061E286122004203C6 /* UserKernelShared.h in Headers */ = {isa = PBXBuildFile; fileRef = 5143B0BC1E2829F2005717AD /* UserKernelShared.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		515BE6F21E3FCA7200829539 /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 51DE79281E3FAE820066EC0F /* internal.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		515FA9B01E36D6BF00AF54CC /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
-		515FA9B11E36EA3400AF54CC /* libcmocka.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 512995791E32EA8600591797 /* libcmocka.a */; };
+		515BE6F31E3FCB1E00829539 /* libsoftu2f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 514CF0FF1E28604F004203C6 /* libsoftu2f.a */; };
+		515BE6F51E3FCB2B00829539 /* libcmocka.0.4.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 515BE6F41E3FCB2B00829539 /* libcmocka.0.4.0.dylib */; };
+		515BE6F71E3FCB3700829539 /* libu2f-host.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 515BE6F61E3FCB3700829539 /* libu2f-host.0.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -112,12 +112,6 @@
 		5129956F1E32E98400591797 /* Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		512995711E32E98400591797 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		512995771E32E9A400591797 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
-		512995791E32EA8600591797 /* libcmocka.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcmocka.a; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.a; sourceTree = "<group>"; };
-		5129957B1E32EABC00591797 /* cmocka.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = cmocka.h; path = ../../../../usr/local/Cellar/cmocka/1.1.0/include/cmocka.h; sourceTree = "<group>"; };
-		5129957E1E32EB0100591797 /* libu2f-host.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libu2f-host.a"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.a"; sourceTree = "<group>"; };
-		512995831E32EC3A00591797 /* u2f-host.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "u2f-host.h"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/include/u2f-host/u2f-host.h"; sourceTree = "<group>"; };
-		512995851E32EDC800591797 /* libu2f-host.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libu2f-host.0.dylib"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.0.dylib"; sourceTree = "<group>"; };
-		512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcmocka.0.4.0.dylib; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.0.4.0.dylib; sourceTree = "<group>"; };
 		5143B0AB1E282828005717AD /* softu2f.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = softu2f.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SoftU2FDriver.hpp; sourceTree = "<group>"; };
 		5143B0B01E282829005717AD /* SoftU2FDriver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SoftU2FDriver.cpp; sourceTree = "<group>"; };
@@ -132,6 +126,8 @@
 		514CF0EB1E285CBC004203C6 /* Example */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Example; sourceTree = BUILT_PRODUCTS_DIR; };
 		514CF0ED1E285CBC004203C6 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		514CF0FF1E28604F004203C6 /* libsoftu2f.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libsoftu2f.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		515BE6F41E3FCB2B00829539 /* libcmocka.0.4.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcmocka.0.4.0.dylib; path = ../../../../usr/local/Cellar/cmocka/1.1.0/lib/libcmocka.0.4.0.dylib; sourceTree = "<group>"; };
+		515BE6F61E3FCB3700829539 /* libu2f-host.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libu2f-host.0.dylib"; path = "../../../../usr/local/Cellar/libu2f-host/1.1.3/lib/libu2f-host.0.dylib"; sourceTree = "<group>"; };
 		515FA9B21E3795E600AF54CC /* LibSoftU2FTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LibSoftU2FTests.h; sourceTree = "<group>"; };
 		51DE79281E3FAE820066EC0F /* internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = internal.h; path = SoftU2F/internal.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -141,9 +137,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				515FA9B11E36EA3400AF54CC /* libcmocka.a in Frameworks */,
-				515FA9B01E36D6BF00AF54CC /* libsoftu2f.a in Frameworks */,
-				512995861E32EDC800591797 /* libu2f-host.0.dylib in Frameworks */,
+				515BE6F71E3FCB3700829539 /* libu2f-host.0.dylib in Frameworks */,
+				515BE6F51E3FCB2B00829539 /* libcmocka.0.4.0.dylib in Frameworks */,
+				515BE6F31E3FCB1E00829539 /* libsoftu2f.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -185,12 +181,8 @@
 		512995761E32E9A400591797 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				512995871E32EDE200591797 /* libcmocka.0.4.0.dylib */,
-				512995851E32EDC800591797 /* libu2f-host.0.dylib */,
-				512995831E32EC3A00591797 /* u2f-host.h */,
-				5129957E1E32EB0100591797 /* libu2f-host.a */,
-				5129957B1E32EABC00591797 /* cmocka.h */,
-				512995791E32EA8600591797 /* libcmocka.a */,
+				515BE6F61E3FCB3700829539 /* libu2f-host.0.dylib */,
+				515BE6F41E3FCB2B00829539 /* libcmocka.0.4.0.dylib */,
 				512995771E32E9A400591797 /* XCTest.framework */,
 			);
 			name = Frameworks;
