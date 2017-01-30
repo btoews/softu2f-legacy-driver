@@ -15,16 +15,16 @@ softu2f_ctx *softu2f_init(bool debug) {
   io_service_t service = IO_OBJECT_NULL;
   kern_return_t ret;
 
+  // Allocate a new context.
+  ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
+  ctx->debug = debug;
+
+  // Find driver.
   service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
   if (!service) {
     softu2f_log(ctx, "SoftU2F.kext not loaded.\n");
     return NULL;
   }
-
-  // Allocate a new context.
-  ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
-
-  ctx->debug = debug;
 
   // Open connection to user client.
   ret = IOServiceOpen(service, mach_task_self(), 0, &ctx->con);
