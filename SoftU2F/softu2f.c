@@ -10,14 +10,14 @@
 #include "internal.h"
 
 // Initialize libSoftU2F before usage.
-softu2f_ctx *softu2f_init(bool debug) {
+softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
   softu2f_ctx *ctx = NULL;
   io_service_t service = IO_OBJECT_NULL;
   kern_return_t ret;
 
   // Allocate a new context.
   ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
-  ctx->debug = debug;
+  ctx->debug = (flags & SOFTU2F_DEBUG) == 1;
 
   // Find driver.
   service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));

@@ -16,8 +16,7 @@ typedef struct softu2f_hid_message softu2f_hid_message;
 typedef struct softu2f_hid_lock softu2f_hid_lock;
 
 // Handler function for HID message.
-typedef bool (*softu2f_hid_message_handler)(softu2f_ctx *ctx,
-                                            softu2f_hid_message *req);
+typedef bool (*softu2f_hid_message_handler)(softu2f_ctx *ctx, softu2f_hid_message *req);
 
 // U2FHID message.
 struct softu2f_hid_message {
@@ -29,8 +28,12 @@ struct softu2f_hid_message {
   uint8_t lastSeq;
 };
 
+typedef enum softu2f_init_flags {
+  SOFTU2F_DEBUG = 1 << 0
+} softu2f_init_flags;
+
 // Initialization
-softu2f_ctx *softu2f_init(bool debug);
+softu2f_ctx *softu2f_init(softu2f_init_flags flags);
 
 // Shutdown the run loop.
 void softu2f_shutdown(softu2f_ctx *ctx);

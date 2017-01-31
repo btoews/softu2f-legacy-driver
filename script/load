@@ -6,7 +6,6 @@ set -e
 
 script/build
 
-# Unload kext if it's loaded.
 if kextstat -b $BUNDLE_ID | grep $BUNDLE_ID &> /dev/null; then
   echo "Unloading softu2f.kext"
   if ! sudo kextunload -b $BUNDLE_ID &> /dev/null; then
@@ -15,8 +14,8 @@ if kextstat -b $BUNDLE_ID | grep $BUNDLE_ID &> /dev/null; then
   fi
 fi
 
-# Load kext.
 echo "Loading softu2f.kext"
+sudo chown -R root:wheel ./build/Debug/softu2f.kext
 if ! sudo kextload ./build/Debug/softu2f.kext/ &> /dev/null; then
   echo "Error loading softu2f.kext"
   exit 1

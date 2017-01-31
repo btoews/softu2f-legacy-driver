@@ -2,11 +2,19 @@
 
 set -e
 
-mkdir -p build
+if [ -z $BUILD_DIR ]; then
+  export BUILD_DIR=./build
+fi
 
 echo "Building softu2f.kext"
-if ! xcodebuild -scheme Driver SYMROOT="./build" &> /dev/null; then
+if ! xcodebuild -scheme Driver SYMROOT=$BUILD_DIR &> /dev/null; then
   echo "Error building softu2f.kext"
+  exit 1
+fi
+
+echo "Building libsoftu2f"
+if ! xcodebuild -scheme softu2f SYMROOT=$BUILD_DIR &> /dev/null; then
+  echo "Error building libsoftu2f.a"
   exit 1
 fi
 
