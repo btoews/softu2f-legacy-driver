@@ -4,11 +4,11 @@ This is a toolset for implementing HID U2F tokens in software. This includes an 
 
 ## Building
 
-You must have Xcode installed to build this project.
+You must have Xcode Command Line Tools installed to build this project.
 
 ```bash
-# Tell xcode-select to use the Xcode app instead of the command line tools.
-sudo xcode-select -s /Applications/Xcode.app
+# Install Commaned Line Tools
+xcode-select --install
 
 # Build softu2f.kext and libsoftu2f.a.
 script/build
