@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+mkdir -p build
+
+echo "Building softu2f.kext"
+if ! xcodebuild -scheme Driver SYMROOT="./build" &> /dev/null; then
+  echo "Error building softu2f.kext"
+  exit 1
+fi
+
+exit 0

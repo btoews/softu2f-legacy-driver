@@ -1,0 +1,25 @@
+#!/bin/bash
+
+BUNDLE_ID=com.github.SoftU2F
+
+set -e
+
+script/build
+
+# Unload kext if it's loaded.
+if kextstat -b $BUNDLE_ID | grep $BUNDLE_ID &> /dev/null; then
+  echo "Unloading softu2f.kext"
+  if ! sudo kextunload -b $BUNDLE_ID &> /dev/null; then
+    echo "Error unloading softu2f.kext. Kill any applications using it and try again."
+    exit 1
+  fi
+fi
+
+# Load kext.
+echo "Loading softu2f.kext"
+if ! sudo kextload ./build/Debug/softu2f.kext/ &> /dev/null; then
+  echo "Error loading softu2f.kext"
+  exit 1
+fi
+
+exit 0
