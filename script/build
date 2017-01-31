@@ -2,20 +2,12 @@
 
 set -e
 
-if [ -z $BUILD_DIR ]; then
-  export BUILD_DIR=./build
-fi
+REPO_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
+BUILD_DIR=$REPO_DIR/build
 
 echo "Building softu2f.kext"
 if ! xcodebuild -scheme Driver SYMROOT=$BUILD_DIR &> /dev/null; then
   echo "Error building softu2f.kext"
   exit 1
 fi
-
-echo "Building libsoftu2f"
-if ! xcodebuild -scheme softu2f SYMROOT=$BUILD_DIR &> /dev/null; then
-  echo "Error building libsoftu2f.a"
-  exit 1
-fi
-
-exit 0
+echo "Built softu2f.kext"

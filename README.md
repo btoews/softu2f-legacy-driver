@@ -19,7 +19,7 @@ script/build
 I'm waiting on Apple to get a certificate for signing kernel extension. In the meantime, you'll have to [disable System Integrity Protection](https://developer.apple.com/library/content/documentation/Security/Conceptual/System_Integrity_Protection_Guide/ConfiguringSystemIntegrityProtection/ConfiguringSystemIntegrityProtection.html#//apple_ref/doc/uid/TP40016462-CH5-SW1) before trying to load `softu2f.kext`.
 
 ```bash
-# Build and load softu2f.kext (requires sudo)
+# Load softu2f.kext (requires sudo)
 script/load
 ```
 
