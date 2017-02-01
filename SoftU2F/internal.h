@@ -36,6 +36,8 @@ struct softu2f_ctx {
   softu2f_hid_message_handler sync_handler;
 };
 
+struct timespec softu2f_poll_interval = {0, 1000000L}; // 1ms. Spec says 5ms...
+
 // Read HID frames from the device until there aren't any more.
 void softu2f_hid_read(softu2f_ctx *ctx);
 
@@ -66,11 +68,17 @@ softu2f_hid_message *softu2f_hid_msg_list_create(softu2f_ctx *ctx);
 // Find a message with the given cid.
 softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid);
 
+// Get size of message list.
+unsigned int softu2f_hid_msg_list_count(softu2f_ctx *ctx);
+
 // Remove a message from the list and free it.
 void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg);
 
 // Allocate memory for a new message.
 softu2f_hid_message *softu2f_hid_msg_alloc(softu2f_ctx *ctx);
+
+// Check if the message has timed out.
+bool softu2f_hid_msg_is_timed_out(softu2f_ctx *ctx, softu2f_hid_message *msg);
 
 // Check if we've read the whole message.
 bool softu2f_hid_msg_is_complete(softu2f_ctx *ctx, softu2f_hid_message *msg);

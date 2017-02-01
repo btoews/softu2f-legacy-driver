@@ -36,7 +36,7 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
-  IOLog("%s[%p]::%s(%d, %p, %p, %p, %p)\n", getName(), this, __FUNCTION__, selector, arguments, dispatch, target, reference);
+//  IOLog("%s[%p]::%s(%d, %p, %p, %p, %p)\n", getName(), this, __FUNCTION__, selector, arguments, dispatch, target, reference);
 
   if (selector < (uint32_t)kNumberOfMethods) {
     dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
@@ -64,7 +64,7 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityT
 
   // This IOLog must follow super::initWithTask because getName relies on the
   // superclass initialization.
-  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
+//  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
 
   fTask = owningTask;
   fProvider = NULL;
@@ -76,7 +76,7 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityT
 // start is called after initWithTask as a result of the user process calling
 // IOServiceOpen.
 bool SoftU2FUserClientClassName::start(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Verify that this user client is being started with a provider that it knows
   // how to communicate with.
@@ -95,14 +95,14 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
 // We override stop only to log that it has been called to make it easier to
 // follow the user client's lifecycle.
 void SoftU2FUserClientClassName::stop(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   super::stop(provider);
 }
 
 // clientClose is called as a result of the user process calling IOServiceClose.
 IOReturn SoftU2FUserClientClassName::clientClose(void) {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (fNotifyRef) {
     IOFree(fNotifyRef, sizeof(OSAsyncReference64));
@@ -133,7 +133,7 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
   // explicitly requests closing the connection to the user client.
   bool success = terminate();
   if (!success) {
-    IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
+//    IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
   }
 
   // DON'T call super::clientClose, which just returns kIOReturnUnsupported.
@@ -151,7 +151,7 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
 IOReturn SoftU2FUserClientClassName::clientDied(void) {
   IOReturn result = kIOReturnSuccess;
 
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   // The default implementation of clientDied just calls clientClose.
   result = super::clientDied();
@@ -169,7 +169,7 @@ IOReturn SoftU2FUserClientClassName::clientDied(void) {
 // inactive and any further requests from the user process should be returned
 // with an error.
 bool SoftU2FUserClientClassName::willTerminate(IOService *provider, IOOptionBits options) {
-  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider, (long)options);
+//  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider, (long)options);
 
   return super::willTerminate(provider, options);
 }
@@ -179,7 +179,7 @@ bool SoftU2FUserClientClassName::willTerminate(IOService *provider, IOOptionBits
 // that a provider has been terminated, sent after recursing up the stack, in
 // leaf-to-root order.
 bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
-  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
+//  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
 
   *defer = false;
 
@@ -194,7 +194,7 @@ bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits 
 bool SoftU2FUserClientClassName::terminate(IOOptionBits options) {
   bool success;
 
-  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
+//  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
 
   success = super::terminate(options);
 
@@ -207,7 +207,7 @@ bool SoftU2FUserClientClassName::terminate(IOOptionBits options) {
 bool SoftU2FUserClientClassName::finalize(IOOptionBits options) {
   bool success;
 
-  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
+//  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
 
   success = super::finalize(options);
 
@@ -215,7 +215,7 @@ bool SoftU2FUserClientClassName::finalize(IOOptionBits options) {
 }
 
 bool SoftU2FUserClientClassName::queueFrame(IOMemoryDescriptor *report) {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (!fQueuedSetReports)
     return false;
@@ -249,7 +249,7 @@ IOReturn SoftU2FUserClientClassName::sGetFrame(SoftU2FUserClientClassName *targe
 }
 
 IOReturn SoftU2FUserClientClassName::getFrame(U2FHID_FRAME *frame, size_t *frameSize) {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (!fProvider)
     return kIOReturnNotAttached;
@@ -281,7 +281,7 @@ IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *targ
 }
 
 IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
-  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (!fProvider)
     return kIOReturnNotAttached;
@@ -300,7 +300,7 @@ IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *ta
 }
 
 IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, ref);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, ref);
 
   if (!fProvider)
     return kIOReturnNotAttached;

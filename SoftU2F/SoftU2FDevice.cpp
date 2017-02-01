@@ -20,23 +20,23 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FDevice, IOHIDDevice)
 
   // This IOLog must follow super::init because getName relies on the superclass
   // initialization.
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
 
   return true;
 }
 
 bool SoftU2FDeviceClassName::start(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
   return super::start(provider);
 }
 
 void SoftU2FDeviceClassName::stop(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
   super::stop(provider);
 }
 
 void SoftU2FDeviceClassName::free() {
-  IOLog("%s[%p]::%s\n", getName(), this, __FUNCTION__);
+//  IOLog("%s[%p]::%s\n", getName(), this, __FUNCTION__);
 
   if (dUserClient) {
     dUserClient->release();
@@ -45,9 +45,8 @@ void SoftU2FDeviceClassName::free() {
   super::free();
 }
 
-IOReturn SoftU2FDeviceClassName::newReportDescriptor(
-    IOMemoryDescriptor **descriptor) const {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, descriptor);
+IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
+//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, descriptor);
 
   IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(
       u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor),
@@ -63,15 +62,15 @@ IOReturn SoftU2FDeviceClassName::newReportDescriptor(
   return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report,
-                                           IOHIDReportType reportType,
-                                           IOOptionBits options) {
-  IOLog("%s[%p]::%s(%p, %d, %d)\n", getName(), this, __FUNCTION__, report,
-        reportType, options);
+IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
+//  IOLog("%s[%p]::%s(%p, %d, %d)\n", getName(), this, __FUNCTION__, report, reportType, options);
 
   if (dUserClient) {
     dUserClient->queueFrame(report);
   }
+
+  // Sleep for a bit to make the HID conformance tests happy.
+  IOSleep(1); // 1ms
 
   return kIOReturnSuccess;
 }

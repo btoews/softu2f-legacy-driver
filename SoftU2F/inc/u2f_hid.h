@@ -117,7 +117,7 @@ typedef struct __attribute__((packed)) {
 #define ERR_MSG_TIMEOUT         0x05    // Message has timed out
 #define ERR_CHANNEL_BUSY        0x06    // Channel busy
 #define ERR_LOCK_REQUIRED       0x0a    // Command requires channel lock
-#define ERR_SYNC_FAIL           0x0b    // SYNC command failed
+#define ERR_INVALID_CID         0x0b    // Message on CID 0
 #define ERR_OTHER               0x7f    // Other unspecified error
 
 #ifdef __cplusplus

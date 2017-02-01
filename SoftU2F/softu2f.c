@@ -6,6 +6,7 @@
 //  Copyright © 2017 GitHub. All rights reserved.
 //
 
+#include <sys/time.h>
 #include "softu2f.h"
 #include "internal.h"
 
@@ -71,7 +72,7 @@ void softu2f_deinit(softu2f_ctx *ctx) {
 void softu2f_run(softu2f_ctx *ctx) {
   struct timespec duration;
   duration.tv_sec = 0;
-  duration.tv_nsec = 100000000L; // 0.1 seconds
+  duration.tv_nsec = 10000000L; // 0.01 seconds
 
   while (true) {
     // Stop the run loop.
@@ -128,6 +129,9 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
     // No more frames.
     if (src >= src_end)
       break;
+
+    // Sleep for a bit.
+    nanosleep(&softu2f_poll_interval, NULL);
 
     // Cont frame.
     dst = frame.cont.data;
@@ -187,14 +191,37 @@ void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame) {
   // See if there's already a message in progress for this channel.
   msg = softu2f_hid_msg_list_find(ctx, frame->cid);
 
+  if (frame->cid == 0x00000000) {
+    softu2f_log(ctx, "Frame with CID 0.\n");
+    softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CID);
+    return;
+  }
+
   switch (FRAME_TYPE(*frame)) {
     case TYPE_INIT:
       if (msg) {
-        softu2f_log(ctx, "INIT while expecting CONT. Resetting.\n");
-        softu2f_hid_msg_list_remove(ctx, msg);
+        if (frame->init.cmd == U2FHID_INIT) {
+          softu2f_log(ctx, "U2FHID_INIT while waiting for CONT. Resetting.\n");
+          softu2f_hid_msg_list_remove(ctx, msg);
+        } else {
+          softu2f_log(ctx, "INIT frame out of order. Bailing.\n");
+          softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
+          softu2f_hid_msg_list_remove(ctx, msg);
+          return;
+        }
       } else if (frame->init.cmd == U2FHID_SYNC) {
         softu2f_log(ctx, "SYNC frame out of order. Bailing.\n");
         softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CMD);
+        return;
+      } else if (frame->init.cmd != U2FHID_INIT && softu2f_hid_msg_list_count(ctx) > 0) {
+        softu2f_log(ctx, "INIT frame while waiting for CONT on other CID.\n");
+        softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
+        return;
+      }
+
+      if (frame->cid == CID_BROADCAST && frame->init.cmd != U2FHID_INIT) {
+        softu2f_log(ctx, "Non U2FHID_INIT message on broadcast CID.\n");
+        softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CID);
         return;
       }
 
@@ -205,6 +232,17 @@ void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame) {
       msg->cmd = frame->init.cmd;
       msg->cid = frame->cid;
       msg->bcnt = MSG_LEN(*frame);
+
+      // From the spec: With a packet size of 64 bytes (max for full-speed
+      // devices), this means that the maximum message payload length is
+      // 64 - 7 + 128 * (64 - 5) = 7609 bytes.
+      if (msg->bcnt > 7609) {
+        softu2f_log(ctx, "BCNT too large (%u). Bailing.\n", msg->bcnt);
+        softu2f_hid_err_send(ctx, msg->cid, ERR_INVALID_LEN);
+        softu2f_hid_msg_list_remove(ctx, msg);
+        return;
+      }
+
       msg->buf = CFDataCreateMutable(NULL, msg->bcnt);
 
       data = frame->init.data;
@@ -269,6 +307,10 @@ void softu2f_hid_handle_messages(softu2f_ctx *ctx) {
         softu2f_hid_err_send(ctx, msg->cid, ERR_INVALID_CMD);
       }
 
+      softu2f_hid_msg_list_remove(ctx, msg);
+    } else if (softu2f_hid_msg_is_timed_out(ctx, msg)) {
+      softu2f_log(ctx, "Message timeout on CID: 0x%08x\n", msg->cid);
+      softu2f_hid_err_send(ctx, msg->cid, ERR_MSG_TIMEOUT);
       softu2f_hid_msg_list_remove(ctx, msg);
     }
 
@@ -450,6 +492,19 @@ softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid) {
   return msg;
 }
 
+// Get size of message list.
+unsigned int softu2f_hid_msg_list_count(softu2f_ctx *ctx) {
+  softu2f_hid_message *msg = ctx->msg_list;
+  unsigned int count;
+
+  while (msg) {
+    count++;
+    msg = msg->next;
+  }
+
+  return count;
+}
+
 // Remove a message from the list and free it.
 void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   softu2f_hid_message *previous;
@@ -483,7 +538,22 @@ softu2f_hid_message *softu2f_hid_msg_alloc(softu2f_ctx *ctx) {
     return NULL;
   }
 
+  // Make note of when message was created.
+  gettimeofday(&msg->start, NULL);
+
   return msg;
+}
+
+// Check if the message has timed out.
+bool softu2f_hid_msg_is_timed_out(softu2f_ctx *ctx, softu2f_hid_message *msg) {
+  struct timeval now, delta;
+  gettimeofday(&now, NULL);
+
+  timersub(&now, &msg->start, &delta);
+
+  // Spec says 3 seconds (U2FHID_TRANS_TIMEOUT)
+  // Conformance test expects 0.5 seconds though.
+  return delta.tv_usec > 500000L;
 }
 
 // Check if we've read the whole message.

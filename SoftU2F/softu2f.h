@@ -25,6 +25,7 @@ struct softu2f_hid_message {
   CFDataRef data;
   CFMutableDataRef buf;
   uint8_t lastSeq;
+  struct timeval start;
   softu2f_hid_message *next;
 };
 
