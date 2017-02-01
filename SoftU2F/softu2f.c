@@ -400,7 +400,7 @@ bool softu2f_hid_msg_handle_init(softu2f_ctx *ctx, softu2f_hid_message *req) {
   if (req->cid == CID_BROADCAST) {
     // Allocate a new CID for the client and tell them about it.
     resp.cid = CID_BROADCAST;
-    resp_data.cid = ctx->next_cid++;
+    resp_data.cid = ++ctx->next_cid;
   } else {
     // Use whatever CID they wanted.
     resp.cid = req->cid;
