@@ -14,10 +14,23 @@ softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
   softu2f_ctx *ctx = NULL;
   io_service_t service = IO_OBJECT_NULL;
   kern_return_t ret;
+  int err;
+
 
   // Allocate a new context.
   ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
+  if (!ctx)
+    return  NULL;
+
+  // Apply init flags.
   ctx->debug = (flags & SOFTU2F_DEBUG) == 1;
+
+  // Setup mutex.
+  err = pthread_mutex_init(ctx->mutex, NULL);
+  if (err) {
+    softu2f_log(ctx, "Error initializing context mutex: %d.\n", err);
+    goto fail;
+  }
 
   // Find driver.
   service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
@@ -51,13 +64,22 @@ void softu2f_shutdown(softu2f_ctx *ctx) {
 // Cleanup after using libSoftU2F.
 void softu2f_deinit(softu2f_ctx *ctx) {
   kern_return_t ret;
+  int err;
 
   // Close user client connection.
-  ret = IOServiceClose(ctx->con);
-  if (ret != KERN_SUCCESS) {
-    softu2f_log(ctx, "Error closing connection to SoftU2F.kext: %d.\n", ret);
-    return;
+  if (ctx->con) {
+    ret = IOServiceClose(ctx->con);
+    if (ret != KERN_SUCCESS)
+      softu2f_log(ctx, "Error closing connection to SoftU2F.kext: %d.\n", ret);
   }
+
+  // Deinit mutex.
+  if (ctx->mutex) {
+    err = pthread_mutex_destroy(ctx->mutex);
+    if (err)
+      softu2f_log(ctx, "Error destroying context mutex: %d.\n", err);
+  }
+
 
   // Cleanup
   free(ctx);
@@ -487,8 +509,71 @@ bool softu2f_hid_msg_handle_sync(softu2f_ctx *ctx, softu2f_hid_message *req) {
   return softu2f_hid_msg_send(ctx, &resp);
 }
 
+// Create a new message and add it to the list.
+softu2f_hid_message *softu2f_hid_msg_list_create(softu2f_ctx *ctx) {
+  softu2f_hid_message *msg;
+  softu2f_hid_message *last_msg = NULL;
+
+  msg = softu2f_hid_msg_alloc(ctx);
+  if (!msg)
+    return NULL;
+
+  // No messages in list. Start a new list.
+  if (!ctx->msg_list) {
+    ctx->msg_list = msg;
+    return msg;
+  }
+
+  // Add new message to end of list.
+  last_msg = ctx->msg_list;
+  while (last_msg->next) {
+    last_msg = last_msg->next;
+  }
+  last_msg->next = msg;
+
+  return msg;
+}
+
+// Find a message with the given cid.
+softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid) {
+  softu2f_hid_message *msg = ctx->msg_list;
+
+  while (msg) {
+    if (msg->cid == cid)
+      break;
+
+    msg = msg->next;
+  }
+
+  return msg;
+}
+
+// Remove a message from the list and free it.
+void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg) {
+  softu2f_hid_message *previous;
+
+  pthread_mutex_lock(ctx->mutex);
+
+  // msg is first.
+  if (msg == ctx->msg_list) {
+    ctx->msg_list = msg->next;
+    softu2f_hid_msg_free(msg);
+    return;
+  }
+
+  // find previous msg.
+  previous = ctx->msg_list;
+  while (previous->next != msg) {
+    previous = previous->next;
+  }
+
+  // Remove msg from list.
+  previous->next = msg->next;
+  softu2f_hid_msg_free(msg);
+}
+
 // Allocate memory for a new message.
-softu2f_hid_message *softu2f_hid_msg_create(softu2f_ctx *ctx) {
+softu2f_hid_message *softu2f_hid_msg_alloc(softu2f_ctx *ctx) {
   softu2f_hid_message *msg;
 
   msg = (softu2f_hid_message *)calloc(1, sizeof(softu2f_hid_message));

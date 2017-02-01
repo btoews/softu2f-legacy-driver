@@ -9,9 +9,12 @@
 #ifndef internal_h
 #define internal_h
 
+#include <IOKit/IOKitLib.h>
+#include <pthread.h>
 #include "UserKernelShared.h"
 #include "u2f_hid.h"
-#include <IOKit/IOKitLib.h>
+
+typedef struct softu2f_hid_lock softu2f_hid_lock;
 
 // Lock held by application.
 struct softu2f_hid_lock {
@@ -24,6 +27,10 @@ struct softu2f_ctx {
   io_connect_t con;
   softu2f_hid_lock *lock;
   uint32_t next_cid;
+  pthread_mutex_t *mutex;
+
+  // Incomming messages.
+  softu2f_hid_message *msg_list;
 
   // Stop the run loop.
   bool shutdown;
@@ -67,8 +74,17 @@ bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req);
 // Send a SYNC response for a given request.
 bool softu2f_hid_msg_handle_sync(softu2f_ctx *ctx, softu2f_hid_message *req);
 
+// Create a new message and add it to the list.
+softu2f_hid_message *softu2f_hid_msg_list_create(softu2f_ctx *ctx);
+
+// Find a message with the given cid.
+softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid);
+
+// Remove a message from the list and free it.
+void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg);
+
 // Allocate memory for a new message.
-softu2f_hid_message *softu2f_hid_msg_create(softu2f_ctx *ctx);
+softu2f_hid_message *softu2f_hid_msg_alloc(softu2f_ctx *ctx);
 
 // Check if we've read the whole message.
 bool softu2f_hid_msg_is_complete(softu2f_ctx *ctx, softu2f_hid_message *msg);

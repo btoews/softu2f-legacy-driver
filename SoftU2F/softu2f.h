@@ -13,7 +13,6 @@
 
 typedef struct softu2f_ctx softu2f_ctx;
 typedef struct softu2f_hid_message softu2f_hid_message;
-typedef struct softu2f_hid_lock softu2f_hid_lock;
 
 // Handler function for HID message.
 typedef bool (*softu2f_hid_message_handler)(softu2f_ctx *ctx, softu2f_hid_message *req);
@@ -26,6 +25,7 @@ struct softu2f_hid_message {
   CFDataRef data;
   CFMutableDataRef buf;
   uint8_t lastSeq;
+  softu2f_hid_message *next;
 };
 
 typedef enum softu2f_init_flags {
