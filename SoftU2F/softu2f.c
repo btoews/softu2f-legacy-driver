@@ -115,23 +115,6 @@ void softu2f_run(softu2f_ctx *ctx) {
   }
 }
 
-// Is this client allowed to start a transaction (not locked by another client)?
-bool softu2f_hid_is_unlocked_for_client(softu2f_ctx *ctx, uint32_t cid) {
-  // No lock.
-  if (!ctx->lock)
-    return true;
-
-  // Lock expired.
-  if (ctx->lock->expiration < time(NULL)) {
-    free(ctx->lock);
-    ctx->lock = NULL;
-    return true;
-  }
-
-  // Is it locked by this client.
-  return ctx->lock->cid == cid;
-}
-
 // Send a HID message to the device.
 bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   uint8_t *src;
@@ -339,9 +322,6 @@ void softu2f_hid_msg_handler_register(softu2f_ctx *ctx, uint8_t type, softu2f_hi
     case U2FHID_MSG:
       ctx->msg_handler = handler;
       break;
-    case U2FHID_LOCK:
-      ctx->lock_handler = handler;
-      break;
     case U2FHID_INIT:
       ctx->init_handler = handler;
       break;
@@ -364,10 +344,6 @@ softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hi
     case U2FHID_MSG:
       if (ctx->msg_handler)
         return ctx->msg_handler;
-      break;
-    case U2FHID_LOCK:
-      if (ctx->lock_handler)
-        return ctx->lock_handler;
       break;
     case U2FHID_INIT:
       if (ctx->init_handler)
@@ -393,8 +369,6 @@ softu2f_hid_message_handler softu2f_hid_msg_handler_default(softu2f_ctx *ctx, so
       return softu2f_hid_msg_handle_ping;
     case U2FHID_MSG:
       return NULL;
-    case U2FHID_LOCK:
-      return softu2f_hid_msg_handle_lock;
     case U2FHID_INIT:
       return softu2f_hid_msg_handle_init;
     case U2FHID_WINK:
@@ -434,7 +408,6 @@ bool softu2f_hid_msg_handle_init(softu2f_ctx *ctx, softu2f_hid_message *req) {
   resp_data.versionMinor = 0;
   resp_data.versionBuild = 0;
   resp_data.capFlags |= CAPFLAG_WINK;
-  resp_data.capFlags |= CAPFLAG_LOCK;
 
   return softu2f_hid_msg_send(ctx, &resp);
 }
@@ -461,40 +434,6 @@ bool softu2f_hid_msg_handle_wink(softu2f_ctx *ctx, softu2f_hid_message *req) {
   resp.data = req->data;
 
   return softu2f_hid_msg_send(ctx, &resp);
-}
-
-// Send a LOCK response for a given request.
-bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req) {
-  softu2f_hid_message resp;
-  uint8_t *duration;
-  bool ret;
-
-  duration = (uint8_t *)CFDataGetBytePtr(req->data);
-  if (*duration > 10) {
-    // Max lock is 10 seconds.
-    *duration = 10;
-  }
-
-  if (*duration == 0) {
-    // Clear lock.
-    if (ctx->lock) {
-      free(ctx->lock);
-      ctx->lock = NULL;
-    }
-  } else {
-    ctx->lock = malloc(sizeof(softu2f_hid_lock));
-    ctx->lock->cid = req->cid;
-    ctx->lock->expiration = time(NULL) + *duration;
-  }
-
-  resp.cid = req->cid;
-  resp.cmd = U2FHID_LOCK;
-  resp.bcnt = 0;
-  resp.data = CFDataCreateMutable(NULL, 0);
-
-  ret = softu2f_hid_msg_send(ctx, &resp);
-  CFRelease(resp.data);
-  return ret;
 }
 
 // Send a SYNC response for a given request.
@@ -551,8 +490,6 @@ softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid) {
 // Remove a message from the list and free it.
 void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   softu2f_hid_message *previous;
-
-  pthread_mutex_lock(ctx->mutex);
 
   // msg is first.
   if (msg == ctx->msg_list) {

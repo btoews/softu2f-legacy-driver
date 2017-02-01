@@ -14,18 +14,9 @@
 #include "UserKernelShared.h"
 #include "u2f_hid.h"
 
-typedef struct softu2f_hid_lock softu2f_hid_lock;
-
-// Lock held by application.
-struct softu2f_hid_lock {
-  uint32_t cid;
-  time_t expiration;
-};
-
-// Context includes lock, cid counter, connection.
+// Context includes cid counter, connection.
 struct softu2f_ctx {
   io_connect_t con;
-  softu2f_hid_lock *lock;
   uint32_t next_cid;
   pthread_mutex_t *mutex;
 
@@ -41,14 +32,11 @@ struct softu2f_ctx {
   // Handlers registered for HID msg types.
   softu2f_hid_message_handler ping_handler;
   softu2f_hid_message_handler msg_handler;
-  softu2f_hid_message_handler lock_handler;
   softu2f_hid_message_handler init_handler;
   softu2f_hid_message_handler wink_handler;
   softu2f_hid_message_handler sync_handler;
 };
 
-// Is this client allowed to start a transaction (not locked by another client)?
-bool softu2f_hid_is_unlocked_for_client(softu2f_ctx *ctx, uint32_t cid);
 
 // Read a HID message from the device.
 softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx);
@@ -67,9 +55,6 @@ bool softu2f_hid_msg_handle_ping(softu2f_ctx *ctx, softu2f_hid_message *req);
 
 // Send a WINK response for a given request.
 bool softu2f_hid_msg_handle_wink(softu2f_ctx *ctx, softu2f_hid_message *req);
-
-// Send a LOCK response for a given request.
-bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req);
 
 // Send a SYNC response for a given request.
 bool softu2f_hid_msg_handle_sync(softu2f_ctx *ctx, softu2f_hid_message *req);
