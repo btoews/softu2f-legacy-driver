@@ -515,49 +515,6 @@ void softu2f_hid_msg_free(softu2f_hid_message *msg) {
   }
 }
 
-// Callback called when a setReport is received by the driver.
-void _softu2f_async_callback(void *refcon, IOReturn result) {
-  // Return execution to main run loop.
-  CFRunLoopStop(CFRunLoopGetCurrent());
-}
-
-void _softu2f_timer_callback(CFRunLoopTimerRef timer, void* info) {
-  // Return execution to main run loop.
-  CFRunLoopStop(CFRunLoopGetCurrent());
-}
-
-// Block until setReport is called on the device.
-void softu2f_wait_for_set_report(softu2f_ctx *ctx) {
-  IONotificationPortRef notificationPort;
-  CFRunLoopSourceRef runLoopSource;
-  CFRunLoopTimerRef timer;
-  io_async_ref64_t asyncRef;
-  kern_return_t ret;
-
-  notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
-  runLoopSource = IONotificationPortGetRunLoopSource(notificationPort);
-  timer = CFRunLoopTimerCreate(NULL, CFAbsoluteTimeGetCurrent() + 1, 0, 0, 0, _softu2f_timer_callback, NULL);
-
-  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
-  CFRunLoopAddTimer(CFRunLoopGetCurrent(), timer, kCFRunLoopDefaultMode);
-
-  asyncRef[kIOAsyncCalloutFuncIndex] = (uint64_t)_softu2f_async_callback;
-  asyncRef[kIOAsyncCalloutRefconIndex] = 0;
-
-  ret = IOConnectCallAsyncScalarMethod(ctx->con, kSoftU2FUserClientNotifyFrame, IONotificationPortGetMachPort(notificationPort), asyncRef, kIOAsyncCalloutCount, NULL, 0, NULL, NULL);
-  if (ret != KERN_SUCCESS) {
-    softu2f_log(ctx, "Unable to register notification port: 0x%08x\n", ret);
-    goto done;
-  }
-
-  CFRunLoopRun();
-
-done:
-  CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
-  CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), timer, kCFRunLoopDefaultMode);
-  IONotificationPortDestroy(notificationPort);
-}
-
 void softu2f_log(softu2f_ctx *ctx, char *fmt, ...) {
   if (ctx->debug) {
     va_list argp;

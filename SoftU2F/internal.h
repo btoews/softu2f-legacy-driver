@@ -81,12 +81,6 @@ void softu2f_hid_msg_finalize(softu2f_ctx *ctx, softu2f_hid_message *msg);
 // Free a HID message and associated data.
 void softu2f_hid_msg_free(softu2f_hid_message *msg);
 
-// Callback called when a setReport is received by the driver.
-void _softu2f_async_callback(void *refcon, IOReturn result);
-
-// Block until setReport is called on the device.
-void softu2f_wait_for_set_report(softu2f_ctx *ctx);
-
 void softu2f_log(softu2f_ctx *ctx, char *fmt, ...);
 
 void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv);
