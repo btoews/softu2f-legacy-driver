@@ -84,7 +84,7 @@ void softu2f_run(softu2f_ctx *ctx) {
         }
       } else {
         softu2f_log(ctx, "No handler for HID message\n");
-        softu2f_hid_err_send(ctx, hidmsg->cid, ERR_OTHER);
+        softu2f_hid_err_send(ctx, hidmsg->cid, ERR_INVALID_CMD);
       }
 
       handler = NULL;
@@ -120,7 +120,6 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   uint8_t seq = 0x00;
   U2FHID_FRAME frame;
   kern_return_t ret;
-  struct timespec duration;
 
   memset(&frame, 0, HID_RPT_SIZE);
 
@@ -147,22 +146,15 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
 
     // Send frame.
     debug_frame(ctx, &frame, false);
-    ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame,
-                                    &frame, HID_RPT_SIZE, NULL, NULL);
+    ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame, &frame, HID_RPT_SIZE, NULL, NULL);
     if (ret != kIOReturnSuccess) {
-      softu2f_log(ctx, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n",
-              ret);
+      softu2f_log(ctx, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n", ret);
       return false;
     }
 
     // No more frames.
     if (src >= src_end)
       break;
-
-    // Polling interval is 5ms.
-    duration.tv_sec = 0;
-    duration.tv_nsec = 500000L;
-    nanosleep(&duration, NULL);
 
     // Cont frame.
     dst = frame.cont.data;
@@ -192,6 +184,7 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
   softu2f_hid_message *msg;
   U2FHID_FRAME frame;
   unsigned long frame_size = HID_RPT_SIZE;
+  struct timespec duration;
 
   msg = (softu2f_hid_message *)calloc(1, sizeof(softu2f_hid_message));
   if (!msg) {
@@ -207,32 +200,36 @@ softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
 
     switch (ret) {
-    case kIOReturnNoFrames:
-      // Wait until we're notified by kernel about a new setReport.
-      softu2f_wait_for_set_report(ctx);
-      break;
-
-    case kIOReturnSuccess:
-      if (frame_size != HID_RPT_SIZE) {
-        softu2f_log(ctx, "bad frame\n");
-        goto done;
-      }
-
-      if (!softu2f_hid_is_unlocked_for_client(ctx, frame.cid)) {
-        softu2f_hid_err_send(ctx, frame.cid, ERR_CHANNEL_BUSY);
+      case kIOReturnNoFrames:
+        // Wait until we're notified by kernel about a new setReport.
+        // softu2f_wait_for_set_report(ctx);
+        duration.tv_sec = 0;
+        duration.tv_nsec = 100000000L;
+        nanosleep(&duration, NULL);
         break;
-      }
 
-      if (!softu2f_hid_msg_frame_read(ctx, msg, &frame)) {
+      case kIOReturnSuccess:
+        if (frame_size != HID_RPT_SIZE) {
+          softu2f_log(ctx, "bad frame\n");
+          goto done;
+        }
+
+        debug_frame(ctx, &frame, true);
+
+//        if (!softu2f_hid_is_unlocked_for_client(ctx, frame.cid)) {
+//          softu2f_hid_err_send(ctx, frame.cid, ERR_CHANNEL_BUSY);
+//          break;
+//        }
+
+        if (!softu2f_hid_msg_frame_read(ctx, msg, &frame)) {
+          goto done;
+        }
+
+        break;
+
+      default:
+        softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n", ret);
         goto done;
-      }
-
-      break;
-
-    default:
-      softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n",
-              ret);
-      goto done;
     }
 
     if (msg->buf) {
@@ -257,8 +254,6 @@ bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg,
                                 U2FHID_FRAME *frame) {
   uint8_t *data;
   unsigned int ndata;
-
-  debug_frame(ctx, frame, true);
 
   switch (FRAME_TYPE(*frame)) {
   case TYPE_INIT:
@@ -441,6 +436,7 @@ bool softu2f_hid_msg_handle_init(softu2f_ctx *ctx, softu2f_hid_message *req) {
   resp_data.versionMinor = 0;
   resp_data.versionBuild = 0;
   resp_data.capFlags |= CAPFLAG_WINK;
+  resp_data.capFlags |= CAPFLAG_LOCK;
 
   return softu2f_hid_msg_send(ctx, &resp);
 }

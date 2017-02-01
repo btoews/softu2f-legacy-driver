@@ -81,6 +81,7 @@ typedef struct __attribute__((packed)) {
 
 #define INIT_NONCE_SIZE         8       // Size of channel initialization challenge
 #define CAPFLAG_WINK            0x01    // Device supports WINK command
+#define CAPFLAG_LOCK            0x02    // Device supports LOCK command
 
 typedef struct __attribute__((packed)) {
   uint8_t nonce[INIT_NONCE_SIZE];       // Client application nonce
