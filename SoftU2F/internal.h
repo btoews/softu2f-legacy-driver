@@ -18,7 +18,6 @@
 struct softu2f_ctx {
   io_connect_t con;
   uint32_t next_cid;
-  pthread_mutex_t *mutex;
 
   // Incomming messages.
   softu2f_hid_message *msg_list;
@@ -37,12 +36,14 @@ struct softu2f_ctx {
   softu2f_hid_message_handler sync_handler;
 };
 
-
-// Read a HID message from the device.
-softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx);
+// Read HID frames from the device until there aren't any more.
+void softu2f_hid_read(softu2f_ctx *ctx);
 
 // Read an individual HID frame from the device into a HID message.
-void softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message **msgPtr, U2FHID_FRAME *frame);
+void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame);
+
+// Handle complete messages. Abort messages that timed out.
+void softu2f_hid_handle_messages(softu2f_ctx *ctx);
 
 // Find a message handler for a message.
 softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hid_message *msg);

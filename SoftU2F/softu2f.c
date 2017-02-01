@@ -14,8 +14,6 @@ softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
   softu2f_ctx *ctx = NULL;
   io_service_t service = IO_OBJECT_NULL;
   kern_return_t ret;
-  int err;
-
 
   // Allocate a new context.
   ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
@@ -24,13 +22,6 @@ softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
 
   // Apply init flags.
   ctx->debug = (flags & SOFTU2F_DEBUG) == 1;
-
-  // Setup mutex.
-  err = pthread_mutex_init(ctx->mutex, NULL);
-  if (err) {
-    softu2f_log(ctx, "Error initializing context mutex: %d.\n", err);
-    goto fail;
-  }
 
   // Find driver.
   service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching(kSoftU2FDriverClassName));
@@ -64,7 +55,6 @@ void softu2f_shutdown(softu2f_ctx *ctx) {
 // Cleanup after using libSoftU2F.
 void softu2f_deinit(softu2f_ctx *ctx) {
   kern_return_t ret;
-  int err;
 
   // Close user client connection.
   if (ctx->con) {
@@ -73,45 +63,24 @@ void softu2f_deinit(softu2f_ctx *ctx) {
       softu2f_log(ctx, "Error closing connection to SoftU2F.kext: %d.\n", ret);
   }
 
-  // Deinit mutex.
-  if (ctx->mutex) {
-    err = pthread_mutex_destroy(ctx->mutex);
-    if (err)
-      softu2f_log(ctx, "Error destroying context mutex: %d.\n", err);
-  }
-
-
   // Cleanup
   free(ctx);
 }
 
 // Read HID messages from device in loop.
 void softu2f_run(softu2f_ctx *ctx) {
-  softu2f_hid_message *hidmsg;
-  softu2f_hid_message_handler handler;
+  struct timespec duration;
+  duration.tv_sec = 0;
+  duration.tv_nsec = 100000000L; // 0.1 seconds
 
   while (true) {
     // Stop the run loop.
     if (ctx->shutdown)
       break;
 
-    hidmsg = softu2f_hid_msg_read(ctx);
-
-    if (hidmsg) {
-      handler = softu2f_hid_msg_handler(ctx, hidmsg);
-
-      if (handler) {
-        if (!handler(ctx, hidmsg)) {
-          softu2f_log(ctx, "Error handling HID message\n");
-        }
-      } else {
-        softu2f_log(ctx, "No handler for HID message\n");
-        softu2f_hid_err_send(ctx, hidmsg->cid, ERR_INVALID_CMD);
-      }
-
-      handler = NULL;
-      softu2f_hid_msg_free(hidmsg);
-    }
+    softu2f_hid_read(ctx);
+    softu2f_hid_handle_messages(ctx);
+    nanosleep(&duration, NULL);
   }
 }
 
@@ -182,84 +151,56 @@ bool softu2f_hid_err_send(softu2f_ctx *ctx, uint32_t cid, uint8_t code) {
   return softu2f_hid_msg_send(ctx, &msg);
 }
 
-// Read a HID message from the device.
-softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx) {
-  softu2f_hid_message *msg = NULL;
+// Read HID frames from the device until there aren't any more.
+void softu2f_hid_read(softu2f_ctx *ctx) {
+  kern_return_t ret = kIOReturnSuccess;
   U2FHID_FRAME frame = {0};
   unsigned long frame_size = HID_RPT_SIZE;
-  struct timespec duration;
-  kern_return_t ret;
 
   while (1) {
     // Stop the run loop.
-    if (ctx->shutdown) {
-      if (msg)
-        softu2f_hid_msg_free(msg);
-      return NULL;
-    }
+    if (ctx->shutdown)
+      return;
 
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
 
-    switch (ret) {
-      case kIOReturnNoFrames:
-        duration.tv_sec = 0;
-        duration.tv_nsec = 100000000L; // 0.1 seconds
-        nanosleep(&duration, NULL);
-        break;
+    if (ret == kIOReturnNoFrames)
+      return;
 
-      case kIOReturnSuccess:
-        if (frame_size != HID_RPT_SIZE) {
-          softu2f_log(ctx, "bad frame\n");
-          break;
-        }
-
-        debug_frame(ctx, &frame, true);
-        softu2f_hid_msg_frame_read(ctx, &msg, &frame);
-        break;
-
-      default:
-        softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n", ret);
-        break;
+    if (ret != kIOReturnSuccess) {
+      softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n", ret);
+      return;
     }
 
-    if (msg && softu2f_hid_msg_is_complete(ctx, msg)) {
-      softu2f_hid_msg_finalize(ctx, msg);
-      return msg;
-    }
+    debug_frame(ctx, &frame, true);
+
+    softu2f_hid_frame_read(ctx, &frame);
   }
 }
 
 // Read an individual HID frame from the device into a HID message.
-void softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message **msgPtr, U2FHID_FRAME *frame) {
+void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame) {
   uint8_t *data;
   unsigned int ndata;
-  softu2f_hid_message *msg = *msgPtr;
+  softu2f_hid_message *msg;
 
-  if (!msg) {
-    msg = *msgPtr = softu2f_hid_msg_create(ctx);
-    if (!msg)
-      return;
-  }
+  // See if there's already a message in progress for this channel.
+  msg = softu2f_hid_msg_list_find(ctx, frame->cid);
 
   switch (FRAME_TYPE(*frame)) {
     case TYPE_INIT:
-      if (msg->buf) { // We've already gotten an INIT.
-//        if (msg->cid == frame->cid) {
-          softu2f_log(ctx, "INIT while expecting CONT. Same CID. Resetting.\n");
-          softu2f_hid_msg_free(msg);
-          msg = *msgPtr = softu2f_hid_msg_create(ctx);
-          if (!msg)
-            return;
-//        } else {
-//          softu2f_log(ctx, "INIT frame out of order. Ignoring.\n");
-//          softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
-//          return;
-//        }
-      } else if(frame->init.cmd == U2FHID_SYNC) {
+      if (msg) {
+        softu2f_log(ctx, "INIT while expecting CONT. Resetting.\n");
+        softu2f_hid_msg_list_remove(ctx, msg);
+      } else if (frame->init.cmd == U2FHID_SYNC) {
         softu2f_log(ctx, "SYNC frame out of order. Bailing.\n");
         softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CMD);
         return;
       }
+
+      msg = softu2f_hid_msg_list_create(ctx);
+      if (!msg)
+        return;
 
       msg->cmd = frame->init.cmd;
       msg->cid = frame->cid;
@@ -275,20 +216,15 @@ void softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message **msgPtr, 
       }
 
       break;
-
     case TYPE_CONT:
-      if (!msg->buf) {
+      if (!msg) {
         softu2f_log(ctx, "CONT frame out of order. Ignoring\n");
-        return;
-      }
-
-      if (frame->cid != msg->cid) {
-        softu2f_log(ctx, "Spurious CNT from other channel. Ignoring.\n");
         return;
       }
 
       if (FRAME_SEQ(*frame) != msg->lastSeq++) {
         softu2f_log(ctx, "Bad SEQ in CONT frame (%d). Bailing\n", FRAME_SEQ(*frame));
+        softu2f_hid_msg_list_remove(ctx, msg);
         softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
         return;
       }
@@ -302,15 +238,42 @@ void softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message **msgPtr, 
       }
 
       break;
-
     default:
       softu2f_log(ctx, "Unknown frame type: 0x%08x\n", FRAME_TYPE(*frame));
       return;
   }
 
   CFDataAppendBytes(msg->buf, data, ndata);
+}
 
-  return;
+// Handle complete messages. Abort messages that timed out.
+void softu2f_hid_handle_messages(softu2f_ctx *ctx) {
+  softu2f_hid_message *msg = NULL;
+  softu2f_hid_message *nextMsg = ctx->msg_list;
+  softu2f_hid_message_handler handler = NULL;
+
+  while (nextMsg) {
+    msg = nextMsg;
+    nextMsg = msg->next;
+
+    if (softu2f_hid_msg_is_complete(ctx, msg)) {
+      softu2f_hid_msg_finalize(ctx, msg);
+      handler = softu2f_hid_msg_handler(ctx, msg);
+
+      if (handler) {
+        if (!handler(ctx, msg)) {
+          softu2f_log(ctx, "Error handling HID message\n");
+        }
+      } else {
+        softu2f_log(ctx, "No handler for HID message\n");
+        softu2f_hid_err_send(ctx, msg->cid, ERR_INVALID_CMD);
+      }
+
+      softu2f_hid_msg_list_remove(ctx, msg);
+    }
+
+    handler = NULL;
+  }
 }
 
 // Register a handler for a message type.
