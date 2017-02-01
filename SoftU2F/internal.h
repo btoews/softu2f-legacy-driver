@@ -15,28 +15,29 @@
 
 // Lock held by application.
 struct softu2f_hid_lock {
-    uint32_t cid;
-    time_t expiration;
+  uint32_t cid;
+  time_t expiration;
 };
 
 // Context includes lock, cid counter, connection.
 struct softu2f_ctx {
-    io_connect_t con;
-    softu2f_hid_lock *lock;
-    uint32_t next_cid;
+  io_connect_t con;
+  softu2f_hid_lock *lock;
+  uint32_t next_cid;
 
-    // Stop the run loop.
-    bool shutdown;
+  // Stop the run loop.
+  bool shutdown;
 
-    // Verbose logging.
-    bool debug;
+  // Verbose logging.
+  bool debug;
 
-    // Handlers registered for HID msg types.
-    softu2f_hid_message_handler ping_handler;
-    softu2f_hid_message_handler msg_handler;
-    softu2f_hid_message_handler lock_handler;
-    softu2f_hid_message_handler init_handler;
-    softu2f_hid_message_handler wink_handler;
+  // Handlers registered for HID msg types.
+  softu2f_hid_message_handler ping_handler;
+  softu2f_hid_message_handler msg_handler;
+  softu2f_hid_message_handler lock_handler;
+  softu2f_hid_message_handler init_handler;
+  softu2f_hid_message_handler wink_handler;
+  softu2f_hid_message_handler sync_handler;
 };
 
 // Is this client allowed to start a transaction (not locked by another client)?
@@ -46,10 +47,7 @@ bool softu2f_hid_is_unlocked_for_client(softu2f_ctx *ctx, uint32_t cid);
 softu2f_hid_message *softu2f_hid_msg_read(softu2f_ctx *ctx);
 
 // Read an individual HID frame from the device into a HID message.
-bool softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message *msg, U2FHID_FRAME *frame);
-
-// Handle a SYNC packet.
-bool softu2f_hid_msg_frame_handle_sync(softu2f_ctx *ctx, U2FHID_FRAME *frame);
+void softu2f_hid_msg_frame_read(softu2f_ctx *ctx, softu2f_hid_message **msgPtr, U2FHID_FRAME *frame);
 
 // Find a message handler for a message.
 softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hid_message *msg);
@@ -65,6 +63,18 @@ bool softu2f_hid_msg_handle_wink(softu2f_ctx *ctx, softu2f_hid_message *req);
 
 // Send a LOCK response for a given request.
 bool softu2f_hid_msg_handle_lock(softu2f_ctx *ctx, softu2f_hid_message *req);
+
+// Send a SYNC response for a given request.
+bool softu2f_hid_msg_handle_sync(softu2f_ctx *ctx, softu2f_hid_message *req);
+
+// Allocate memory for a new message.
+softu2f_hid_message *softu2f_hid_msg_create(softu2f_ctx *ctx);
+
+// Check if we've read the whole message.
+bool softu2f_hid_msg_is_complete(softu2f_ctx *ctx, softu2f_hid_message *msg);
+
+// Initialize the message's data with the contents of its read buffer.
+void softu2f_hid_msg_finalize(softu2f_ctx *ctx, softu2f_hid_message *msg);
 
 // Free a HID message and associated data.
 void softu2f_hid_msg_free(softu2f_hid_message *msg);
