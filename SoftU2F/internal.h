@@ -18,12 +18,11 @@
 struct softu2f_ctx {
   io_connect_t con;
   uint32_t next_cid;
+  pthread_mutex_t mutex;
+  CFRunLoopRef run_loop;
 
   // Incomming messages.
   softu2f_hid_message *msg_list;
-
-  // Stop the run loop.
-  bool shutdown;
 
   // Verbose logging.
   bool debug;
@@ -89,9 +88,19 @@ void softu2f_hid_msg_finalize(softu2f_ctx *ctx, softu2f_hid_message *msg);
 // Free a HID message and associated data.
 void softu2f_hid_msg_free(softu2f_hid_message *msg);
 
+// Log a message if logging is enabled.
 void softu2f_log(softu2f_ctx *ctx, char *fmt, ...);
 
+// Log a U2FHID_FRAME if logging is enabled.
 void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv);
 
+// Called by the kernel when setReport is called on our device.
+void softu2f_async_callback(void *refcon, IOReturn result);
+
+// Called periodically in our runloop.
+void softu2f_async_timer_callback(CFRunLoopTimerRef timer, void* info);
+
+// Install async handler with the kernel and start run loop.
+void softu2f_run_async(softu2f_ctx *ctx);
 
 #endif /* internal_h */

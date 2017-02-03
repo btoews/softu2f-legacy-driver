@@ -27,19 +27,13 @@ protected:
 
 public:
   // IOUserClient methods
-  virtual void stop(IOService *provider) override;
   virtual bool start(IOService *provider) override;
 
   virtual bool initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) override;
 
   virtual IOReturn clientClose(void) override;
-  virtual IOReturn clientDied(void) override;
 
-  virtual bool willTerminate(IOService *provider, IOOptionBits options) override;
   virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
-
-  virtual bool terminate(IOOptionBits options = 0) override;
-  virtual bool finalize(IOOptionBits options) override;
 
   virtual bool queueFrame(IOMemoryDescriptor *report);
 
