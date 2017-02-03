@@ -6,9 +6,9 @@
 //  Copyright © 2017 GitHub. All rights reserved.
 //
 
-#include <sys/time.h>
 #include "softu2f.h"
 #include "internal.h"
+#include <sys/time.h>
 
 // Initialize libSoftU2F before usage.
 softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
@@ -19,7 +19,7 @@ softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
   // Allocate a new context.
   ctx = (softu2f_ctx *)calloc(1, sizeof(softu2f_ctx));
   if (!ctx)
-    return  NULL;
+    return NULL;
 
   // Apply init flags.
   ctx->debug = (flags & SOFTU2F_DEBUG) == 1;
@@ -43,14 +43,16 @@ softu2f_ctx *softu2f_init(softu2f_init_flags flags) {
   return ctx;
 
 fail:
-  if (service) IOObjectRelease(service);
-  if (ctx) softu2f_deinit(ctx);
+  if (service)
+    IOObjectRelease(service);
+  if (ctx)
+    softu2f_deinit(ctx);
   return NULL;
 }
 
 // Shutdown the run loop.
 void softu2f_shutdown(softu2f_ctx *ctx) {
-    ctx->shutdown = true;
+  ctx->shutdown = true;
 }
 
 // Cleanup after using libSoftU2F.
@@ -198,87 +200,87 @@ void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame) {
   }
 
   switch (FRAME_TYPE(*frame)) {
-    case TYPE_INIT:
-      if (msg) {
-        if (frame->init.cmd == U2FHID_INIT) {
-          softu2f_log(ctx, "U2FHID_INIT while waiting for CONT. Resetting.\n");
-          softu2f_hid_msg_list_remove(ctx, msg);
-        } else {
-          softu2f_log(ctx, "INIT frame out of order. Bailing.\n");
-          softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
-          softu2f_hid_msg_list_remove(ctx, msg);
-          return;
-        }
-      } else if (frame->init.cmd == U2FHID_SYNC) {
-        softu2f_log(ctx, "SYNC frame out of order. Bailing.\n");
-        softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CMD);
-        return;
-      } else if (frame->init.cmd != U2FHID_INIT && softu2f_hid_msg_list_count(ctx) > 0) {
-        softu2f_log(ctx, "INIT frame while waiting for CONT on other CID.\n");
-        softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
-        return;
-      }
-
-      if (frame->cid == CID_BROADCAST && frame->init.cmd != U2FHID_INIT) {
-        softu2f_log(ctx, "Non U2FHID_INIT message on broadcast CID.\n");
-        softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CID);
-        return;
-      }
-
-      msg = softu2f_hid_msg_list_create(ctx);
-      if (!msg)
-        return;
-
-      msg->cmd = frame->init.cmd;
-      msg->cid = frame->cid;
-      msg->bcnt = MSG_LEN(*frame);
-
-      // From the spec: With a packet size of 64 bytes (max for full-speed
-      // devices), this means that the maximum message payload length is
-      // 64 - 7 + 128 * (64 - 5) = 7609 bytes.
-      if (msg->bcnt > 7609) {
-        softu2f_log(ctx, "BCNT too large (%u). Bailing.\n", msg->bcnt);
-        softu2f_hid_err_send(ctx, msg->cid, ERR_INVALID_LEN);
+  case TYPE_INIT:
+    if (msg) {
+      if (frame->init.cmd == U2FHID_INIT) {
+        softu2f_log(ctx, "U2FHID_INIT while waiting for CONT. Resetting.\n");
         softu2f_hid_msg_list_remove(ctx, msg);
-        return;
-      }
-
-      msg->buf = CFDataCreateMutable(NULL, msg->bcnt);
-
-      data = frame->init.data;
-
-      if (msg->bcnt > sizeof(frame->init.data)) {
-        ndata = sizeof(frame->init.data);
       } else {
-        ndata = msg->bcnt;
-      }
-
-      break;
-    case TYPE_CONT:
-      if (!msg) {
-        softu2f_log(ctx, "CONT frame out of order. Ignoring\n");
-        return;
-      }
-
-      if (FRAME_SEQ(*frame) != msg->lastSeq++) {
-        softu2f_log(ctx, "Bad SEQ in CONT frame (%d). Bailing\n", FRAME_SEQ(*frame));
-        softu2f_hid_msg_list_remove(ctx, msg);
+        softu2f_log(ctx, "INIT frame out of order. Bailing.\n");
         softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
+        softu2f_hid_msg_list_remove(ctx, msg);
         return;
       }
-
-      data = frame->cont.data;
-
-      if (CFDataGetLength(msg->buf) + sizeof(frame->cont.data) > msg->bcnt) {
-        ndata = msg->bcnt - (uint16_t)CFDataGetLength(msg->buf);
-      } else {
-        ndata = sizeof(frame->cont.data);
-      }
-
-      break;
-    default:
-      softu2f_log(ctx, "Unknown frame type: 0x%08x\n", FRAME_TYPE(*frame));
+    } else if (frame->init.cmd == U2FHID_SYNC) {
+      softu2f_log(ctx, "SYNC frame out of order. Bailing.\n");
+      softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CMD);
       return;
+    } else if (frame->init.cmd != U2FHID_INIT && softu2f_hid_msg_list_count(ctx) > 0) {
+      softu2f_log(ctx, "INIT frame while waiting for CONT on other CID.\n");
+      softu2f_hid_err_send(ctx, frame->cid, ERR_CHANNEL_BUSY);
+      return;
+    }
+
+    if (frame->cid == CID_BROADCAST && frame->init.cmd != U2FHID_INIT) {
+      softu2f_log(ctx, "Non U2FHID_INIT message on broadcast CID.\n");
+      softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_CID);
+      return;
+    }
+
+    msg = softu2f_hid_msg_list_create(ctx);
+    if (!msg)
+      return;
+
+    msg->cmd = frame->init.cmd;
+    msg->cid = frame->cid;
+    msg->bcnt = MSG_LEN(*frame);
+
+    // From the spec: With a packet size of 64 bytes (max for full-speed
+    // devices), this means that the maximum message payload length is
+    // 64 - 7 + 128 * (64 - 5) = 7609 bytes.
+    if (msg->bcnt > 7609) {
+      softu2f_log(ctx, "BCNT too large (%u). Bailing.\n", msg->bcnt);
+      softu2f_hid_err_send(ctx, msg->cid, ERR_INVALID_LEN);
+      softu2f_hid_msg_list_remove(ctx, msg);
+      return;
+    }
+
+    msg->buf = CFDataCreateMutable(NULL, msg->bcnt);
+
+    data = frame->init.data;
+
+    if (msg->bcnt > sizeof(frame->init.data)) {
+      ndata = sizeof(frame->init.data);
+    } else {
+      ndata = msg->bcnt;
+    }
+
+    break;
+  case TYPE_CONT:
+    if (!msg) {
+      softu2f_log(ctx, "CONT frame out of order. Ignoring\n");
+      return;
+    }
+
+    if (FRAME_SEQ(*frame) != msg->lastSeq++) {
+      softu2f_log(ctx, "Bad SEQ in CONT frame (%d). Bailing\n", FRAME_SEQ(*frame));
+      softu2f_hid_msg_list_remove(ctx, msg);
+      softu2f_hid_err_send(ctx, frame->cid, ERR_INVALID_SEQ);
+      return;
+    }
+
+    data = frame->cont.data;
+
+    if (CFDataGetLength(msg->buf) + sizeof(frame->cont.data) > msg->bcnt) {
+      ndata = msg->bcnt - (uint16_t)CFDataGetLength(msg->buf);
+    } else {
+      ndata = sizeof(frame->cont.data);
+    }
+
+    break;
+  default:
+    softu2f_log(ctx, "Unknown frame type: 0x%08x\n", FRAME_TYPE(*frame));
+    return;
   }
 
   CFDataAppendBytes(msg->buf, data, ndata);
@@ -321,47 +323,47 @@ void softu2f_hid_handle_messages(softu2f_ctx *ctx) {
 // Register a handler for a message type.
 void softu2f_hid_msg_handler_register(softu2f_ctx *ctx, uint8_t type, softu2f_hid_message_handler handler) {
   switch (type) {
-    case U2FHID_PING:
-      ctx->ping_handler = handler;
-      break;
-    case U2FHID_MSG:
-      ctx->msg_handler = handler;
-      break;
-    case U2FHID_INIT:
-      ctx->init_handler = handler;
-      break;
-    case U2FHID_WINK:
-      ctx->wink_handler = handler;
-      break;
-    case U2FHID_SYNC:
-      ctx->sync_handler = handler;
-      break;
+  case U2FHID_PING:
+    ctx->ping_handler = handler;
+    break;
+  case U2FHID_MSG:
+    ctx->msg_handler = handler;
+    break;
+  case U2FHID_INIT:
+    ctx->init_handler = handler;
+    break;
+  case U2FHID_WINK:
+    ctx->wink_handler = handler;
+    break;
+  case U2FHID_SYNC:
+    ctx->sync_handler = handler;
+    break;
   }
 }
 
 // Find a message handler for a message.
 softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   switch (msg->cmd) {
-    case U2FHID_PING:
-      if (ctx->ping_handler)
-        return ctx->ping_handler;
-      break;
-    case U2FHID_MSG:
-      if (ctx->msg_handler)
-        return ctx->msg_handler;
-      break;
-    case U2FHID_INIT:
-      if (ctx->init_handler)
-        return ctx->init_handler;
-      break;
-    case U2FHID_WINK:
-      if (ctx->wink_handler)
-        return ctx->wink_handler;
-      break;
-    case U2FHID_SYNC:
-      if (ctx->sync_handler)
-        return ctx->sync_handler;
-      break;
+  case U2FHID_PING:
+    if (ctx->ping_handler)
+      return ctx->ping_handler;
+    break;
+  case U2FHID_MSG:
+    if (ctx->msg_handler)
+      return ctx->msg_handler;
+    break;
+  case U2FHID_INIT:
+    if (ctx->init_handler)
+      return ctx->init_handler;
+    break;
+  case U2FHID_WINK:
+    if (ctx->wink_handler)
+      return ctx->wink_handler;
+    break;
+  case U2FHID_SYNC:
+    if (ctx->sync_handler)
+      return ctx->sync_handler;
+    break;
   }
 
   return softu2f_hid_msg_handler_default(ctx, msg);
@@ -370,18 +372,18 @@ softu2f_hid_message_handler softu2f_hid_msg_handler(softu2f_ctx *ctx, softu2f_hi
 // Find the default message handler for a message.
 softu2f_hid_message_handler softu2f_hid_msg_handler_default(softu2f_ctx *ctx, softu2f_hid_message *msg) {
   switch (msg->cmd) {
-    case U2FHID_PING:
-      return softu2f_hid_msg_handle_ping;
-    case U2FHID_MSG:
-      return NULL;
-    case U2FHID_INIT:
-      return softu2f_hid_msg_handle_init;
-    case U2FHID_WINK:
-      return softu2f_hid_msg_handle_wink;
-    case U2FHID_SYNC:
-      return softu2f_hid_msg_handle_sync;
-    default:
-      return NULL;
+  case U2FHID_PING:
+    return softu2f_hid_msg_handle_ping;
+  case U2FHID_MSG:
+    return NULL;
+  case U2FHID_INIT:
+    return softu2f_hid_msg_handle_init;
+  case U2FHID_WINK:
+    return softu2f_hid_msg_handle_wink;
+  case U2FHID_SYNC:
+    return softu2f_hid_msg_handle_sync;
+  default:
+    return NULL;
   }
 }
 
@@ -607,27 +609,27 @@ void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
   softu2f_log(ctx, "\tCID: 0x%08x\n", frame->cid);
 
   switch (FRAME_TYPE(*frame)) {
-    case TYPE_INIT:
-      softu2f_log(ctx, "\tTYPE: INIT\n");
-      softu2f_log(ctx, "\tCMD: 0x%02x\n", frame->init.cmd & ~TYPE_MASK);
-      softu2f_log(ctx, "\tBCNTH: 0x%02x\n", frame->init.bcnth);
-      softu2f_log(ctx, "\tBCNTL: 0x%02x\n", frame->init.bcntl);
-      data = frame->init.data;
-      dlen = HID_RPT_SIZE - 7;
+  case TYPE_INIT:
+    softu2f_log(ctx, "\tTYPE: INIT\n");
+    softu2f_log(ctx, "\tCMD: 0x%02x\n", frame->init.cmd & ~TYPE_MASK);
+    softu2f_log(ctx, "\tBCNTH: 0x%02x\n", frame->init.bcnth);
+    softu2f_log(ctx, "\tBCNTL: 0x%02x\n", frame->init.bcntl);
+    data = frame->init.data;
+    dlen = HID_RPT_SIZE - 7;
 
-      break;
+    break;
 
-    case TYPE_CONT:
-      softu2f_log(ctx, "\tTYPE: CONT\n");
-      softu2f_log(ctx, "\tSEQ: 0x%02x\n", frame->cont.seq);
-      data = frame->cont.data;
-      dlen = HID_RPT_SIZE - 5;
+  case TYPE_CONT:
+    softu2f_log(ctx, "\tTYPE: CONT\n");
+    softu2f_log(ctx, "\tSEQ: 0x%02x\n", frame->cont.seq);
+    data = frame->cont.data;
+    dlen = HID_RPT_SIZE - 5;
 
-      break;
+    break;
   }
 
   softu2f_log(ctx, "\tDATA:");
-  for(int i = 0; i < dlen; i++) {
+  for (int i = 0; i < dlen; i++) {
     softu2f_log(ctx, " %02x", data[i]);
   }
 

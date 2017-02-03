@@ -6,23 +6,23 @@
 //  Copyright © 2017 GitHub. All rights reserved.
 //
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <pthread.h>
+#include "LibSoftU2FTests.h"
 #include "softu2f.h"
 #include "u2f-host.h"
 #include "u2f_hid.h"
-#include "LibSoftU2FTests.h"
+#include <cmocka.h>
+#include <pthread.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <unistd.h>
 
 pthread_t run_thread = NULL;
 softu2f_ctx *ctx = NULL;
 u2fh_devs *devs = NULL;
 
-void *run_thread_main(void* arg);
+void *run_thread_main(void *arg);
 
 // Test INIT request/response.
 void test_init(void **state) {
@@ -30,7 +30,7 @@ void test_init(void **state) {
   uint8_t resp_bytes[1024];
   size_t resp_len = sizeof(resp_bytes);
   U2FHID_INIT_RESP *resp = (U2FHID_INIT_RESP *)resp_bytes;
-  U2FHID_INIT_REQ req = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+  U2FHID_INIT_REQ req = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
   u2fdevice *dev = get_device();
   dev->cid = CID_BROADCAST;
 
@@ -65,13 +65,13 @@ void test_long_ping(void **state) {
 
 // Test long PING — bitshifting is hard :'(
 void test_really_long_ping(void **state) {
-    unsigned char data[] = "9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c";
-    unsigned char resp[1024];
-    size_t resplen = sizeof(resp);
-    u2fh_sendrecv(devs, 0, U2FHID_PING, data, sizeof(data), resp, &resplen);
+  unsigned char data[] = "9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c9dac044c027bf00e1505b32b19a42053dee08f7a8e971e17e447a86d393745591ab720559cb65b0c";
+  unsigned char resp[1024];
+  size_t resplen = sizeof(resp);
+  u2fh_sendrecv(devs, 0, U2FHID_PING, data, sizeof(data), resp, &resplen);
 
-    assert_int_equal(sizeof(data), resplen);
-    assert_string_equal(data, resp);
+  assert_int_equal(sizeof(data), resplen);
+  assert_string_equal(data, resp);
 }
 
 // Test LOCK request/response.
@@ -124,18 +124,19 @@ int setup(void **state) {
 }
 
 int teardown(void **state) {
-  if (devs) u2fh_devs_done(devs);
+  if (devs)
+    u2fh_devs_done(devs);
   devs = NULL;
 
   u2fh_global_done();
 
   softu2f_shutdown(ctx);
   pthread_join(run_thread, NULL);
-  
+
   return 0;
 }
 
-void *run_thread_main(void* arg) {
+void *run_thread_main(void *arg) {
   softu2f_run(ctx);
   return NULL;
 }
@@ -144,7 +145,8 @@ u2fdevice *get_device() {
   u2fdevice *dev = devs->first;
 
   while (dev) {
-    if (dev->id == 0) return dev;
+    if (dev->id == 0)
+      return dev;
     dev = dev->next;
   }
 
@@ -154,11 +156,11 @@ u2fdevice *get_device() {
 
 int main(void) {
   const struct CMUnitTest tests[] = {
-    cmocka_unit_test(test_init),
-    cmocka_unit_test(test_ping),
-    cmocka_unit_test(test_long_ping),
-    cmocka_unit_test(test_really_long_ping),
-    cmocka_unit_test(test_lock),
+      cmocka_unit_test(test_init),
+      cmocka_unit_test(test_ping),
+      cmocka_unit_test(test_long_ping),
+      cmocka_unit_test(test_really_long_ping),
+      cmocka_unit_test(test_lock),
   };
 
   return cmocka_run_group_tests(tests, setup, teardown);

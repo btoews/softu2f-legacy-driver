@@ -17,7 +17,7 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FDriver, IOService);
 bool SoftU2FDriverClassName::start(IOService *provider) {
   bool success;
 
-//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+  //  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   success = super::start(provider);
 
@@ -32,7 +32,7 @@ bool SoftU2FDriverClassName::start(IOService *provider) {
 // We override stop only to log that it has been called to make it easier to
 // follow the driver's lifecycle.
 void SoftU2FDriverClassName::stop(IOService *provider) {
-//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+  //  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Terminate and release every managed HID device.
   OSCollectionIterator *iter =
@@ -68,7 +68,7 @@ bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
 
   // This IOLog must follow super::init because getName relies on the superclass
   // initialization.
-//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
+  //  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
 
   // Setup HID devices dictionary.
   m_hid_devices = OSDictionary::withCapacity(1);
@@ -83,7 +83,7 @@ bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
 // We override free only to log that it has been called to make it easier to
 // follow the driver's lifecycle.
 void SoftU2FDriverClassName::free(void) {
-//  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+  //  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   // Clear the HID devices dictionary.
   if (m_hid_devices) {
@@ -99,7 +99,7 @@ void SoftU2FDriverClassName::free(void) {
 // whether the driver is appropriate for
 // the provider.
 IOService *SoftU2FDriverClassName::probe(IOService *provider, SInt32 *score) {
-//  IOLog("%s[%p]::%s(%p, %p)\n", getName(), this, __FUNCTION__, provider, score);
+  //  IOLog("%s[%p]::%s(%p, %p)\n", getName(), this, __FUNCTION__, provider, score);
 
   IOService *res = super::probe(provider, score);
 
@@ -119,7 +119,7 @@ IOService *SoftU2FDriverClassName::probe(IOService *provider, SInt32 *score) {
 // inactive and any further requests from the user process should be returned
 // with an error.
 bool SoftU2FDriverClassName::willTerminate(IOService *provider, IOOptionBits options) {
-//  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider, (long)options);
+  //  IOLog("%s[%p]::%s(%p, %ld)\n", getName(), this, __FUNCTION__, provider, (long)options);
 
   return super::willTerminate(provider, options);
 }
@@ -132,7 +132,7 @@ bool SoftU2FDriverClassName::willTerminate(IOService *provider, IOOptionBits opt
 // that a provider has been terminated, sent after recursing up the stack, in
 // leaf-to-root order.
 bool SoftU2FDriverClassName::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
-//  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
+  //  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
 
   return super::didTerminate(provider, options, defer);
 }
@@ -145,7 +145,7 @@ bool SoftU2FDriverClassName::didTerminate(IOService *provider, IOOptionBits opti
 bool SoftU2FDriverClassName::terminate(IOOptionBits options) {
   bool success;
 
-//  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
+  //  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
 
   success = super::terminate(options);
 
@@ -158,7 +158,7 @@ bool SoftU2FDriverClassName::terminate(IOOptionBits options) {
 bool SoftU2FDriverClassName::finalize(IOOptionBits options) {
   bool success;
 
-//  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
+  //  IOLog("%s[%p]::%s(%ld)\n", getName(), this, __FUNCTION__, (long)options);
 
   success = super::finalize(options);
 
@@ -209,7 +209,7 @@ fail:
 }
 
 bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
-//  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, userClient);
+  //  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, userClient);
 
   SoftU2FDeviceClassName *device;
 
@@ -236,7 +236,7 @@ fail:
 }
 
 bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_FRAME *frame) {
-//  IOLog("%s[%p]::%s(%p, %p)\n", getName(), this, __FUNCTION__, userClient, frame);
+  //  IOLog("%s[%p]::%s(%p, %p)\n", getName(), this, __FUNCTION__, userClient, frame);
 
   IOMemoryDescriptor *report = nullptr;
   SoftU2FDeviceClassName *device;
@@ -254,10 +254,10 @@ bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_
   report->writeBytes(0, frame, HID_RPT_SIZE);
 
   if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess) {
-//    IOLog("Report correctly sent to device.");
+    //    IOLog("Report correctly sent to device.");
     ret = true;
   } else {
-//    IOLog("Error while sending report to device.");
+    //    IOLog("Error while sending report to device.");
   }
 
   report->release();

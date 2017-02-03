@@ -9,10 +9,10 @@
 #ifndef internal_h
 #define internal_h
 
-#include <IOKit/IOKitLib.h>
-#include <pthread.h>
 #include "UserKernelShared.h"
 #include "u2f_hid.h"
+#include <IOKit/IOKitLib.h>
+#include <pthread.h>
 
 // Context includes cid counter, connection.
 struct softu2f_ctx {
@@ -92,6 +92,5 @@ void softu2f_hid_msg_free(softu2f_hid_message *msg);
 void softu2f_log(softu2f_ctx *ctx, char *fmt, ...);
 
 void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv);
-
 
 #endif /* internal_h */
