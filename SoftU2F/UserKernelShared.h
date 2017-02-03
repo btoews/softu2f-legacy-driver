@@ -14,7 +14,6 @@
 
 // User client method dispatch selectors.
 enum {
-  kSoftU2FUserClientGetFrame,
   kSoftU2FUserClientSendFrame,
   kSoftU2FUserClientNotifyFrame,
   kNumberOfMethods // Must be last

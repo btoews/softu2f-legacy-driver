@@ -56,7 +56,7 @@ IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descri
 
 IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
   if (dUserClient) {
-    dUserClient->queueFrame(report);
+    dUserClient->frameReceived(report);
   }
 
   // Sleep for a bit to make the HID conformance tests happy.

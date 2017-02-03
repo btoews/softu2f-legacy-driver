@@ -21,7 +21,6 @@ class SoftU2FUserClientClassName : public IOUserClient {
 protected:
   SoftU2FDriverClassName *fProvider;
   task_t fTask;
-  OSArray *fQueuedSetReports = nullptr;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
@@ -35,15 +34,12 @@ public:
 
   virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
 
-  virtual bool queueFrame(IOMemoryDescriptor *report);
+  virtual bool frameReceived(IOMemoryDescriptor *report);
 
 protected:
   virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;
 
   // User client methods
-  static IOReturn sGetFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
-  virtual IOReturn getFrame(U2FHID_FRAME *frame, size_t *frameSize);
-
   static IOReturn sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
 

@@ -37,9 +37,6 @@ struct softu2f_ctx {
 
 struct timespec softu2f_poll_interval = {0, 1000000L}; // 1ms. Spec says 5ms...
 
-// Read HID frames from the device until there aren't any more.
-void softu2f_hid_read(softu2f_ctx *ctx);
-
 // Read an individual HID frame from the device into a HID message.
 void softu2f_hid_frame_read(softu2f_ctx *ctx, U2FHID_FRAME *frame);
 
@@ -95,12 +92,9 @@ void softu2f_log(softu2f_ctx *ctx, char *fmt, ...);
 void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv);
 
 // Called by the kernel when setReport is called on our device.
-void softu2f_async_callback(void *refcon, IOReturn result);
+void softu2f_async_callback(void *refcon, IOReturn result, io_user_reference_t* args, uint32_t numArgs);
 
 // Called periodically in our runloop.
 void softu2f_async_timer_callback(CFRunLoopTimerRef timer, void* info);
-
-// Install async handler with the kernel and start run loop.
-void softu2f_run_async(softu2f_ctx *ctx);
 
 #endif /* internal_h */

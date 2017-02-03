@@ -57,16 +57,6 @@ fail:
   return NULL;
 }
 
-// Shutdown the run loop.
-void softu2f_shutdown(softu2f_ctx *ctx) {
-  if (ctx->run_loop) {
-    softu2f_log(ctx, "Shutting down softu2f run loop.\n");
-    CFRunLoopStop(ctx->run_loop);
-  } else {
-    softu2f_log(ctx, "Error shutting down softu2f run loop.\n");
-  }
-}
-
 // Cleanup after using libSoftU2F.
 void softu2f_deinit(softu2f_ctx *ctx) {
   kern_return_t ret;
@@ -86,13 +76,82 @@ void softu2f_deinit(softu2f_ctx *ctx) {
 
 // Read HID messages from device in loop.
 void softu2f_run(softu2f_ctx *ctx) {
-  // Flush any messages before we install async handler.
-  pthread_mutex_lock(&ctx->mutex);
-  softu2f_hid_read(ctx);
-  softu2f_hid_handle_messages(ctx);
-  pthread_mutex_unlock(&ctx->mutex);
+  IONotificationPortRef notification_port;
+  mach_port_t mnotification_port;
+  CFRunLoopSourceRef run_loop_source;
+  CFRunLoopTimerRef run_loop_timer;
+  CFRunLoopTimerContext timer_ctx;
+  io_async_ref64_t async_ref;
+  kern_return_t ret;
 
-  softu2f_run_async(ctx);
+  if (ctx->run_loop) {
+    softu2f_log(ctx, "Can't start softu2f run loop. Already running.\n");
+    return;
+  }
+
+  // Create port to listen for kernel notifications on.
+  notification_port = IONotificationPortCreate(kIOMasterPortDefault);
+  if (!notification_port) {
+    softu2f_log(ctx, "Error getting notification port.\n");
+    return;
+  }
+
+  // Get lower level mach port from notification port.
+  mnotification_port = IONotificationPortGetMachPort(notification_port);
+  if (!mnotification_port) {
+    softu2f_log(ctx, "Error getting mach notification port.\n");
+    return;
+  }
+
+  // Create a run loop source from our notification port so we can add the port to our run loop.
+  run_loop_source = IONotificationPortGetRunLoopSource(notification_port);
+  if (run_loop_source == NULL) {
+    softu2f_log(ctx, "Error getting run loop source.\n");
+    return;
+  }
+
+  // Create a timer to run periodically.
+  memset(&timer_ctx, 0, sizeof(CFRunLoopTimerContext));
+  timer_ctx.info = ctx;
+  run_loop_timer = CFRunLoopTimerCreate(NULL, 0, 0.2, 0, 0, softu2f_async_timer_callback, &timer_ctx);
+  if (run_loop_source == NULL) {
+    softu2f_log(ctx, "Error creating timer.\n");
+    return;
+  }
+
+  // Add the notification port and timer to the run loop.
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), run_loop_source, kCFRunLoopDefaultMode);
+  CFRunLoopAddTimer(CFRunLoopGetCurrent(), run_loop_timer, kCFRunLoopDefaultMode);
+
+  // Params to pass to the kernel.
+  async_ref[kIOAsyncCalloutFuncIndex] = (uint64_t)softu2f_async_callback;
+  async_ref[kIOAsyncCalloutRefconIndex] = (uint64_t)ctx;
+
+  // Tell the kernel how to notify us.
+  ret = IOConnectCallAsyncScalarMethod(ctx->con, kSoftU2FUserClientNotifyFrame, mnotification_port, async_ref, kIOAsyncCalloutCount, NULL, 0, NULL, 0);
+  if (ret != kIOReturnSuccess) {
+    softu2f_log(ctx, "Error registering for setFrame notifications.\n");
+    return;
+  }
+
+  // Blocks until the run loop is stopped in our callback.
+  softu2f_log(ctx, "Starting softu2f async run loop.\n");
+  ctx->run_loop = CFRunLoopGetCurrent();
+  CFRunLoopRun();
+  ctx->run_loop = NULL;
+
+  // Clean up.
+  IONotificationPortDestroy(notification_port);
+}
+
+// Shutdown the run loop.
+void softu2f_shutdown(softu2f_ctx *ctx) {
+  if (ctx->run_loop) {
+    softu2f_log(ctx, "Shutting down softu2f run loop.\n");
+    CFRunLoopStop(ctx->run_loop);
+  } else {
+    softu2f_log(ctx, "Error shutting down softu2f run loop.\n");
+  }
 }
 
 // Send a HID message to the device.
@@ -163,29 +222,6 @@ bool softu2f_hid_err_send(softu2f_ctx *ctx, uint32_t cid, uint8_t code) {
   msg.data = CFDataCreateWithBytesNoCopy(NULL, &code, 1, NULL);
 
   return softu2f_hid_msg_send(ctx, &msg);
-}
-
-// Read HID frames from the device until there aren't any more.
-void softu2f_hid_read(softu2f_ctx *ctx) {
-  kern_return_t ret = kIOReturnSuccess;
-  U2FHID_FRAME frame = {0};
-  unsigned long frame_size = HID_RPT_SIZE;
-
-  while (1) {
-    ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientGetFrame, NULL, 0, &frame, &frame_size);
-
-    if (ret == kIOReturnNoFrames)
-      return;
-
-    if (ret != kIOReturnSuccess) {
-      softu2f_log(ctx, "error calling kSoftU2FUserClientGetFrame: 0x%08x\n", ret);
-      return;
-    }
-
-    softu2f_debug_frame(ctx, &frame, true);
-
-    softu2f_hid_frame_read(ctx, &frame);
-  }
 }
 
 // Read an individual HID frame from the device into a HID message.
@@ -591,6 +627,7 @@ void softu2f_hid_msg_free(softu2f_hid_message *msg) {
   }
 }
 
+// Log a message if logging is enabled.
 void softu2f_log(softu2f_ctx *ctx, char *fmt, ...) {
   if (ctx->debug) {
     va_list argp;
@@ -600,6 +637,7 @@ void softu2f_log(softu2f_ctx *ctx, char *fmt, ...) {
   }
 }
 
+// Log a U2FHID_FRAME if logging is enabled.
 void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
   uint8_t *data = NULL;
   uint16_t dlen = 0;
@@ -641,8 +679,9 @@ void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
 }
 
 // Called by the kernel when setReport is called on our device.
-void softu2f_async_callback(void *refcon, IOReturn result) {
+void softu2f_async_callback(void *refcon, IOReturn result, io_user_reference_t* args, uint32_t numArgs) {
   softu2f_ctx *ctx;
+  U2FHID_FRAME *frame;
 
   if (!refcon || result != kIOReturnSuccess) {
     printf("Unexpected call to softu2f_async_callback.\n");
@@ -651,10 +690,18 @@ void softu2f_async_callback(void *refcon, IOReturn result) {
 
   ctx = (softu2f_ctx *)refcon;
 
+  if (numArgs * sizeof(io_user_reference_t) != sizeof(U2FHID_FRAME)) {
+    softu2f_log(ctx, "Unexpected argument count in softu2f_async_callback.\n");
+    goto stop;
+  }
+
+  frame = (U2FHID_FRAME *)args;
+  softu2f_debug_frame(ctx, frame, true);
+
   pthread_mutex_lock(&ctx->mutex);
 
-  // Read any frames from the device.
-  softu2f_hid_read(ctx);
+  // Read frame into a HID message.
+  softu2f_hid_frame_read(ctx, frame);
 
   // Handle any completed messages.
   softu2f_hid_handle_messages(ctx);
@@ -691,74 +738,4 @@ stop:
     softu2f_log(ctx, "Shutting down softu2f async run loop because of error.\n");
 
   CFRunLoopStop(CFRunLoopGetCurrent());
-}
-
-// Install async handler with the kernel and start run loop.
-void softu2f_run_async(softu2f_ctx *ctx) {
-  IONotificationPortRef notification_port;
-  mach_port_t mnotification_port;
-  CFRunLoopSourceRef run_loop_source;
-  CFRunLoopTimerRef run_loop_timer;
-  CFRunLoopTimerContext timer_ctx;
-  io_async_ref64_t async_ref;
-  kern_return_t ret;
-
-  if (ctx->run_loop) {
-    softu2f_log(ctx, "Can't start softu2f run loop. Already running.\n");
-    return;
-  }
-
-  // Create port to listen for kernel notifications on.
-  notification_port = IONotificationPortCreate(kIOMasterPortDefault);
-  if (!notification_port) {
-    softu2f_log(ctx, "Error getting notification port.\n");
-    return;
-  }
-
-  // Get lower level mach port from notification port.
-  mnotification_port = IONotificationPortGetMachPort(notification_port);
-  if (!mnotification_port) {
-    softu2f_log(ctx, "Error getting mach notification port.\n");
-    return;
-  }
-
-  // Create a run loop source from our notification port so we can add the port to our run loop.
-  run_loop_source = IONotificationPortGetRunLoopSource(notification_port);
-  if (run_loop_source == NULL) {
-    softu2f_log(ctx, "Error getting run loop source.\n");
-    return;
-  }
-
-  // Create a timer to run periodically.
-  memset(&timer_ctx, 0, sizeof(CFRunLoopTimerContext));
-  timer_ctx.info = ctx;
-  run_loop_timer = CFRunLoopTimerCreate(NULL, 0, 0.2, 0, 0, softu2f_async_timer_callback, &timer_ctx);
-  if (run_loop_source == NULL) {
-    softu2f_log(ctx, "Error creating timer.\n");
-    return;
-  }
-
-  // Add the notification port and timer to the run loop.
-  CFRunLoopAddSource(CFRunLoopGetCurrent(), run_loop_source, kCFRunLoopDefaultMode);
-  CFRunLoopAddTimer(CFRunLoopGetCurrent(), run_loop_timer, kCFRunLoopDefaultMode);
-
-  // Params to pass to the kernel.
-  async_ref[kIOAsyncCalloutFuncIndex] = (uint64_t)softu2f_async_callback;
-  async_ref[kIOAsyncCalloutRefconIndex] = (uint64_t)ctx;
-
-  // Tell the kernel how to notify us.
-  ret = IOConnectCallAsyncScalarMethod(ctx->con, kSoftU2FUserClientNotifyFrame, mnotification_port, async_ref, kIOAsyncCalloutCount, NULL, 0, NULL, 0);
-  if (ret != kIOReturnSuccess) {
-    softu2f_log(ctx, "Error registering for setFrame notifications.\n");
-    return;
-  }
-
-  // Blocks until the run loop is stopped in our callback.
-  softu2f_log(ctx, "Starting softu2f async run loop.\n");
-  ctx->run_loop = CFRunLoopGetCurrent();
-  CFRunLoopRun();
-  ctx->run_loop = NULL;
-
-  // Clean up.
-  IONotificationPortDestroy(notification_port);
 }

@@ -36,14 +36,14 @@ typedef enum softu2f_init_flags {
 // Initialization
 softu2f_ctx *softu2f_init(softu2f_init_flags flags);
 
-// Shutdown the run loop.
-void softu2f_shutdown(softu2f_ctx *ctx);
-
 // Deinitialization
 void softu2f_deinit(softu2f_ctx *ctx);
 
-// Read HID messages from device in loop.
+// Read HID messages from the device.
 void softu2f_run(softu2f_ctx *ctx);
+
+// Shutdown the run loop.
+void softu2f_shutdown(softu2f_ctx *ctx);
 
 // Send a HID message to the device.
 bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg);
