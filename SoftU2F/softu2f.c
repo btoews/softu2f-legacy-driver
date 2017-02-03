@@ -121,7 +121,7 @@ bool softu2f_hid_msg_send(softu2f_ctx *ctx, softu2f_hid_message *msg) {
     }
 
     // Send frame.
-    debug_frame(ctx, &frame, false);
+    softu2f_debug_frame(ctx, &frame, false);
     ret = IOConnectCallStructMethod(ctx->con, kSoftU2FUserClientSendFrame, &frame, HID_RPT_SIZE, NULL, NULL);
     if (ret != kIOReturnSuccess) {
       softu2f_log(ctx, "Error calling kSoftU2FUserClientSendFrame: 0x%08x\n", ret);
@@ -178,7 +178,7 @@ void softu2f_hid_read(softu2f_ctx *ctx) {
       return;
     }
 
-    debug_frame(ctx, &frame, true);
+    softu2f_debug_frame(ctx, &frame, true);
 
     softu2f_hid_frame_read(ctx, &frame);
   }
@@ -596,7 +596,7 @@ void softu2f_log(softu2f_ctx *ctx, char *fmt, ...) {
   }
 }
 
-void debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
+void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
   uint8_t *data = NULL;
   uint16_t dlen = 0;
 
