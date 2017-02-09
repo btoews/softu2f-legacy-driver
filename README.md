@@ -1,6 +1,6 @@
 # SoftU2F
 
-This is a toolset for implementing HID U2F tokens in software. This includes an OSX driver that emulates HID U2F devices as well as a library for sending/receiving messages using emulated device. See the [included example](SoftU2FExample/main.c) for a demonstration of basic usage. See [SoftU2FTool](https://github.com/mastahyeti/SoftU2FTool) for an example of a fully functional U2F authenticator.
+This is a toolset for implementing HID U2F tokens in software. This includes an OSX driver that emulates HID U2F devices as well as a library for sending/receiving messages using emulated device. See [SoftU2FTool](https://github.com/mastahyeti/SoftU2FTool) for an example of a fully functional U2F authenticator.
 
 ## Building
 
