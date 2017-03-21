@@ -242,7 +242,8 @@
 				TargetAttributes = {
 					5143B0AA1E282828005717AD = {
 						CreatedOnToolsVersion = 8.2.1;
-						ProvisioningStyle = Automatic;
+						DevelopmentTeam = VEKTX9H2N7;
+						ProvisioningStyle = Manual;
 					};
 					514CF0FE1E28604F004203C6 = {
 						CreatedOnToolsVersion = 8.2.1;
@@ -413,14 +414,17 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
 			name = Release;
 		};
 		5143B0B61E282829005717AD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				DEVELOPMENT_TEAM = VEKTX9H2N7;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/SoftU2F/inc";
 				INFOPLIST_FILE = SoftU2F/Info.plist;
 				MODULE_NAME = com.github.SoftU2F;
@@ -434,8 +438,10 @@
 		5143B0B71E282829005717AD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
+				DEVELOPMENT_TEAM = VEKTX9H2N7;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/SoftU2F/inc";
 				INFOPLIST_FILE = SoftU2F/Info.plist;
 				MODULE_NAME = com.github.SoftU2F;
@@ -550,6 +556,7 @@
 				F7D468BB1E4CED18005F2494 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
