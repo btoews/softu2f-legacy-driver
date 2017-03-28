@@ -537,7 +537,7 @@ softu2f_hid_message *softu2f_hid_msg_list_find(softu2f_ctx *ctx, uint32_t cid) {
 // Get size of message list.
 unsigned int softu2f_hid_msg_list_count(softu2f_ctx *ctx) {
   softu2f_hid_message *msg = ctx->msg_list;
-  unsigned int count;
+  unsigned int count = 0;
 
   while (msg) {
     count++;
@@ -680,7 +680,7 @@ void softu2f_debug_frame(softu2f_ctx *ctx, U2FHID_FRAME *frame, bool recv) {
 
 // Called by the kernel when setReport is called on our device.
 void softu2f_async_callback(void *refcon, IOReturn result, io_user_reference_t* args, uint32_t numArgs) {
-  softu2f_ctx *ctx;
+  softu2f_ctx *ctx = NULL;
   U2FHID_FRAME *frame;
 
   if (!refcon || result != kIOReturnSuccess) {
