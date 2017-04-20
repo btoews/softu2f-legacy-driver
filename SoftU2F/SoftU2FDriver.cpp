@@ -39,8 +39,7 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
     const char *key = nullptr;
 
     while ((key = (char *)iter->getNextObject())) {
-      SoftU2FDeviceClassName *device =
-          (SoftU2FDeviceClassName *)m_hid_devices->getObject(key);
+      SoftU2FDeviceClassName *device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
 
       if (device) {
         IOLog("Terminating device.");
@@ -101,7 +100,7 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
   if (!key)
     goto fail;
 
-  device = (SoftU2FDeviceClassName *)m_hid_devices->getObject(key);
+  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
 
   if (!device) {
     device = OSTypeAlloc(SoftU2FDeviceClassName);
@@ -133,7 +132,7 @@ bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
   if (!key)
     goto fail;
 
-  device = (SoftU2FDeviceClassName *)m_hid_devices->getObject(key);
+  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
   if (!device)
     goto fail;
 
@@ -156,7 +155,7 @@ bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_
   SoftU2FDeviceClassName *device;
   bool ret = false;
 
-  device = (SoftU2FDeviceClassName *)userClientDevice(userClient);
+  device = OSDynamicCast(SoftU2FDeviceClassName, userClientDevice(userClient));
   if (!device)
     return false;
 
