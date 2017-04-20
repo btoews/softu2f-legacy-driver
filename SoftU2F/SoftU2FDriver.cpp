@@ -131,7 +131,7 @@ fail:
 }
 
 bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
-  SoftU2FDeviceClassName *device;
+  SoftU2FDeviceClassName *device = nullptr;
 
   OSString *key = userClientKey(userClient);
   if (!key)
