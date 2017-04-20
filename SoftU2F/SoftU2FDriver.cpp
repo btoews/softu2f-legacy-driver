@@ -88,12 +88,8 @@ void SoftU2FDriverClassName::free(void) {
 }
 
 OSString *SoftU2FDriverClassName::userClientKey(IOService *userClient) {
-  const size_t ptrSize = sizeof(IOService *);
-  const size_t hexPtrSize = 2 + (2 * ptrSize); // 0x...
-  char cKey[hexPtrSize + 1];
-
-  snprintf(cKey, hexPtrSize, "%p", userClient);
-  cKey[hexPtrSize] = 0;
+  char cKey[64]; // extra space, since %p format isn't guaranteed
+  snprintf(cKey, 64, "%p", userClient);
 
   return OSString::withCString(cKey);
 }
