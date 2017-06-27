@@ -20,7 +20,6 @@ class SoftU2FUserClientClassName : public IOUserClient {
 
 protected:
   SoftU2FDriverClassName *fProvider;
-  task_t fTask;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 

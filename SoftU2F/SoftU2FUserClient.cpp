@@ -56,7 +56,6 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityT
   // superclass initialization.
   //  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
 
-  fTask = owningTask;
   fProvider = NULL;
 
   return success;
