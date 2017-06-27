@@ -159,12 +159,15 @@ IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frame
 }
 
 IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
-  return target->notifyFrame(arguments->asyncReference);
+  return target->notifyFrame(arguments->asyncReference, arguments->asyncReferenceCount);
 }
 
-IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
+IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref, uint32_t refCount) {
   if (!fProvider)
     return kIOReturnNotAttached;
+
+  if (sizeof(io_user_reference_t) * refCount != sizeof(OSAsyncReference64))
+    return kIOReturnBadArgument;
 
   if (fNotifyRef) {
     IOFree(fNotifyRef, sizeof(OSAsyncReference64));

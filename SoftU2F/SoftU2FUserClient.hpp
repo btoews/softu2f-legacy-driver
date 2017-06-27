@@ -44,7 +44,7 @@ protected:
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
 
   static IOReturn sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
-  virtual IOReturn notifyFrame(io_user_reference_t *ref);
+  virtual IOReturn notifyFrame(io_user_reference_t *ref, uint32_t refCount);
 };
 
 #endif /* SoftU2FUserClient_hpp */
