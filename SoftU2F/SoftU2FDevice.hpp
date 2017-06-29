@@ -42,9 +42,6 @@ protected:
   SoftU2FUserClientClassName *dUserClient;
 
 public:
-  virtual bool init(OSDictionary *dictionary = 0) override;
-  virtual bool start(IOService *provider) override;
-  virtual void stop(IOService *provider) override;
   virtual void free(void) override;
 
   virtual OSString *newProductString() const override;

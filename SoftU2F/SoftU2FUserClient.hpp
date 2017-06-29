@@ -33,7 +33,7 @@ public:
 
   virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
 
-  virtual bool frameReceived(IOMemoryDescriptor *report);
+  virtual void frameReceived(IOMemoryDescriptor *report);
 
 protected:
   virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;

@@ -73,9 +73,8 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
     return false;
 
   IOService *device = fProvider->userClientDevice(this);
-  if (!device) {
+  if (!device)
     return false;
-  }
 
   return super::start(provider);
 }
@@ -120,11 +119,12 @@ bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits 
   return super::didTerminate(provider, options, defer);
 }
 
-bool SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
-  bool ret = false;
+void SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
   IOMemoryMap *reportMap;
 
-  report->prepare();
+  if (report->prepare() != kIOReturnSuccess)
+    return;
+  
   reportMap = report->map();
 
   // Notify userland that we got a report.
@@ -133,10 +133,8 @@ bool SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
     sendAsyncResult64(*fNotifyRef, kIOReturnSuccess, args, sizeof(U2FHID_FRAME) / sizeof(io_user_reference_t));
   }
 
-  report->complete();
   reportMap->release();
-
-  return ret;
+  report->complete();
 }
 
 IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
@@ -146,14 +144,14 @@ IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *targ
 IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
   if (!fProvider)
     return kIOReturnNotAttached;
+
   if (frameSize != HID_RPT_SIZE)
     return kIOReturnBadArgument;
 
-  if (fProvider->userClientDeviceSend(this, frame)) {
-    return kIOReturnSuccess;
-  } else {
+  if (!fProvider->userClientDeviceSend(this, frame))
     return kIOReturnError;
-  }
+  
+  return kIOReturnSuccess;
 }
 
 IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {

@@ -43,8 +43,8 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
       if (device) {
         IOLog("Terminating device.");
 
-        if (!device->isInactive())
-          device->terminate();
+        if (!device->isInactive() && !device->terminate())
+          IOLog("Error terminating device.");
 
         device->release();
       }
@@ -63,7 +63,7 @@ bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
 
   // This IOLog must follow super::init because getName relies on the superclass
   // initialization.
-    IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
 
   // Setup HID devices dictionary.
   m_hid_devices = OSDictionary::withCapacity(1);
@@ -115,8 +115,12 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
     if (!m_hid_devices->setObject(key, device))
       goto fail_device;
 
-    device->attach(this);
-    device->start(this);
+    if (!device->attach(this))
+      goto fail_device;
+
+    if (!device->start(this))
+      goto fail_device;
+    
     device->setUserClient(userClient);
   }
 
