@@ -40,9 +40,7 @@ void SoftU2FDeviceClassName::free() {
 }
 
 IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
-  IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(
-      u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor),
-      kIODirectionNone);
+  IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor), kIODirectionNone);
 
   if (!buffer) {
     IOLog("Error while allocating new IOBufferMemoryDescriptor.");
@@ -80,6 +78,11 @@ OSNumber *SoftU2FDeviceClassName::newVendorIDNumber() const {
 OSNumber *SoftU2FDeviceClassName::newProductIDNumber() const {
   return OSNumber::withNumber(123, 32);
 }
+
+OSNumber* SoftU2FDeviceClassName::newPrimaryUsageNumber() const {
+  return OSNumber::withNumber(kHIDUsage_PID_TriggerButton, 32);
+}
+
 
 bool SoftU2FDeviceClassName::setUserClient(IOService *userClient) {
   dUserClient = OSDynamicCast(SoftU2FUserClientClassName, userClient);

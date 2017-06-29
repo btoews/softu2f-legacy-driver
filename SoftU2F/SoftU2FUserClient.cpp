@@ -14,24 +14,24 @@
 
 OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
 
-    /**
-     * A dispatch table for this User Client interface, used by
-     * 'SoftU2FUserClientClassName::externalMethod()'.
-     * The fields of the IOExternalMethodDispatch type follows:
-     *
-     *  struct IOExternalMethodDispatch
-     *  {
-     *      IOExternalMethodAction function;
-     *      uint32_t		   checkScalarInputCount;
-     *      uint32_t		   checkStructureInputSize;
-     *      uint32_t		   checkScalarOutputCount;
-     *      uint32_t		   checkStructureOutputSize;
-     *  };
-     */
-    const IOExternalMethodDispatch
-    SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
+/**
+ * A dispatch table for this User Client interface, used by
+ * 'SoftU2FUserClientClassName::externalMethod()'.
+ * The fields of the IOExternalMethodDispatch type follows:
+ *
+ *  struct IOExternalMethodDispatch
+ *  {
+ *      IOExternalMethodAction function;
+ *      uint32_t		   checkScalarInputCount;
+ *      uint32_t		   checkStructureInputSize;
+ *      uint32_t		   checkScalarOutputCount;
+ *      uint32_t		   checkStructureOutputSize;
+ *  };
+ */
+const IOExternalMethodDispatch
+SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
+    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
+    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
@@ -100,8 +100,7 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
   // open. This should never happen in our case because this code path is only
   // reached if the user process explicitly requests closing the connection to
   // the user client.
-  bool success = terminate();
-  if (!success) {
+  if (!terminate()) {
         IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
   }
 

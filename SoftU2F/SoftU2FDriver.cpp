@@ -100,18 +100,20 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
 
   OSString *key = userClientKey(userClient);
   if (!key)
-    goto fail;
+    goto fail_key;
 
   device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
 
   if (!device) {
     device = OSTypeAlloc(SoftU2FDeviceClassName);
     if (!device)
-      goto fail;
+      goto fail_device;
+
     if (!device->init(nullptr))
-      goto fail;
+      goto fail_device;
+
     if (!m_hid_devices->setObject(key, device))
-      goto fail;
+      goto fail_device;
 
     device->attach(this);
     device->start(this);
@@ -119,11 +121,15 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
   }
 
   return device;
-fail:
-  if (key)
-    key->release();
+
+fail_device:
   if (device)
     device->release();
+
+fail_key:
+  if (key)
+    key->release();
+
   return nullptr;
 }
 
@@ -132,11 +138,11 @@ bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
 
   OSString *key = userClientKey(userClient);
   if (!key)
-    goto fail;
+    goto fail_key;
 
   device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
   if (!device)
-    goto fail;
+    goto fail_device;
 
   if (!device->isInactive())
     device->terminate();
@@ -146,11 +152,15 @@ bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
   device->release();
 
   return true;
-fail:
+
+fail_device:
   if (device)
     device->release();
+
+fail_key:
   if (key)
     key->release();
+
   return false;
 }
 
@@ -163,16 +173,14 @@ bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_
   if (!device)
     return false;
 
-  report =
-      IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
+  report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
   if (!report)
     return false;
 
   report->writeBytes(0, frame, HID_RPT_SIZE);
 
-  if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess) {
+  if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess)
     ret = true;
-  }
 
   report->release();
 
