@@ -162,9 +162,6 @@ IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref, uint3
   if (!fProvider)
     return kIOReturnNotAttached;
 
-  if (sizeof(io_user_reference_t) * refCount != sizeof(OSAsyncReference64))
-    return kIOReturnBadArgument;
-
   if (fNotifyRef) {
     IOFree(fNotifyRef, sizeof(OSAsyncReference64));
     fNotifyRef = nullptr;
@@ -174,7 +171,9 @@ IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref, uint3
   if (!fNotifyRef)
     return kIOReturnNoMemory;
 
-  memcpy(fNotifyRef, ref, sizeof(OSAsyncReference64));
+  bzero(fNotifyRef, sizeof(OSAsyncReference64));
+
+  memcpy(fNotifyRef, ref, sizeof(io_user_reference_t) * refCount);
 
   return kIOReturnSuccess;
 }
