@@ -33,8 +33,7 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
     IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Terminate and release every managed HID device.
-  OSCollectionIterator *iter =
-      OSCollectionIterator::withCollection(m_hid_devices);
+  OSCollectionIterator *iter = OSCollectionIterator::withCollection(m_hid_devices);
   if (iter) {
     const char *key = nullptr;
 
@@ -43,7 +42,10 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
 
       if (device) {
         IOLog("Terminating device.");
-        device->terminate();
+
+        if (!device->isInactive() && !device->terminate())
+          IOLog("Error terminating device.");
+
         device->release();
       }
     }
@@ -61,7 +63,7 @@ bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
 
   // This IOLog must follow super::init because getName relies on the superclass
   // initialization.
-    IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
 
   // Setup HID devices dictionary.
   m_hid_devices = OSDictionary::withCapacity(1);
@@ -98,30 +100,40 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
 
   OSString *key = userClientKey(userClient);
   if (!key)
-    goto fail;
+    goto fail_key;
 
   device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
 
   if (!device) {
     device = OSTypeAlloc(SoftU2FDeviceClassName);
     if (!device)
-      goto fail;
-    if (!device->init(nullptr))
-      goto fail;
-    if (!m_hid_devices->setObject(key, device))
-      goto fail;
+      goto fail_device;
 
-    device->attach(this);
-    device->start(this);
+    if (!device->init(nullptr))
+      goto fail_device;
+
+    if (!m_hid_devices->setObject(key, device))
+      goto fail_device;
+
+    if (!device->attach(this))
+      goto fail_device;
+
+    if (!device->start(this))
+      goto fail_device;
+    
     device->setUserClient(userClient);
   }
 
   return device;
-fail:
-  if (key)
-    key->release();
+
+fail_device:
   if (device)
     device->release();
+
+fail_key:
+  if (key)
+    key->release();
+
   return nullptr;
 }
 
@@ -130,23 +142,29 @@ bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
 
   OSString *key = userClientKey(userClient);
   if (!key)
-    goto fail;
+    goto fail_key;
 
   device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
   if (!device)
-    goto fail;
+    goto fail_device;
 
-  device->terminate();
+  if (!device->isInactive())
+    device->terminate();
+
   m_hid_devices->removeObject(key);
   key->release();
   device->release();
 
   return true;
-fail:
+
+fail_device:
   if (device)
     device->release();
+
+fail_key:
   if (key)
     key->release();
+
   return false;
 }
 
@@ -159,16 +177,14 @@ bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_
   if (!device)
     return false;
 
-  report =
-      IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
+  report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
   if (!report)
     return false;
 
   report->writeBytes(0, frame, HID_RPT_SIZE);
 
-  if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess) {
+  if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess)
     ret = true;
-  }
 
   report->release();
 

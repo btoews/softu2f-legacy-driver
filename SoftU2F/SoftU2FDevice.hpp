@@ -42,16 +42,15 @@ protected:
   SoftU2FUserClientClassName *dUserClient;
 
 public:
-  virtual bool init(OSDictionary *dictionary = 0) override;
-  virtual bool start(IOService *provider) override;
-  virtual void stop(IOService *provider) override;
   virtual void free(void) override;
 
   virtual OSString *newProductString() const override;
   virtual OSString *newSerialNumberString() const override;
   virtual OSNumber *newVendorIDNumber() const override;
   virtual OSNumber *newProductIDNumber() const override;
+  virtual OSNumber *newPrimaryUsageNumber() const override;
   virtual IOReturn newReportDescriptor(IOMemoryDescriptor **descriptor) const override;
+
   virtual IOReturn setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options = 0) override;
 
   virtual bool setUserClient(IOService *userClient);

@@ -13,24 +13,6 @@
 #define super IOHIDDevice
 OSDefineMetaClassAndStructors(com_github_SoftU2FDevice, IOHIDDevice)
 
-bool SoftU2FDeviceClassName::init(OSDictionary *dictionary) {
-  if (!super::init(dictionary)) {
-    return false;
-  }
-
-  return true;
-}
-
-bool SoftU2FDeviceClassName::start(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
-  return super::start(provider);
-}
-
-void SoftU2FDeviceClassName::stop(IOService *provider) {
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
-  super::stop(provider);
-}
-
 void SoftU2FDeviceClassName::free() {
   if (dUserClient) {
     dUserClient->release();
@@ -40,14 +22,9 @@ void SoftU2FDeviceClassName::free() {
 }
 
 IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
-  IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(
-      u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor),
-      kIODirectionNone);
-
-  if (!buffer) {
-    IOLog("Error while allocating new IOBufferMemoryDescriptor.");
+  IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor), kIODirectionNone);
+  if (!buffer)
     return kIOReturnNoResources;
-  }
 
   *descriptor = buffer;
 
@@ -55,9 +32,8 @@ IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descri
 }
 
 IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
-  if (dUserClient) {
+  if (dUserClient)
     dUserClient->frameReceived(report);
-  }
 
   // Sleep for a bit to make the HID conformance tests happy.
   IOSleep(1); // 1ms
@@ -81,13 +57,16 @@ OSNumber *SoftU2FDeviceClassName::newProductIDNumber() const {
   return OSNumber::withNumber(123, 32);
 }
 
+OSNumber* SoftU2FDeviceClassName::newPrimaryUsageNumber() const {
+  return OSNumber::withNumber(kHIDUsage_PID_TriggerButton, 32);
+}
+
 bool SoftU2FDeviceClassName::setUserClient(IOService *userClient) {
   dUserClient = OSDynamicCast(SoftU2FUserClientClassName, userClient);
-
-  if (dUserClient) {
-    dUserClient->retain();
-    return true;
-  } else {
+  
+  if (!dUserClient)
     return false;
-  }
+
+  dUserClient->retain();
+  return true;
 }

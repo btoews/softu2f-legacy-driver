@@ -560,9 +560,13 @@ void softu2f_hid_msg_list_remove(softu2f_ctx *ctx, softu2f_hid_message *msg) {
 
   // find previous msg.
   previous = ctx->msg_list;
-  while (previous->next != msg) {
+  while (previous && previous->next != msg) {
     previous = previous->next;
   }
+  
+  // msg not in list.
+  if (!previous)
+    return;
 
   // Remove msg from list.
   previous->next = msg->next;

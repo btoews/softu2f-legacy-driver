@@ -118,8 +118,8 @@
 		5143B0AD1E282828005717AD /* Driver */ = {
 			isa = PBXGroup;
 			children = (
-				5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */,
 				5143B0B01E282829005717AD /* SoftU2FDriver.cpp */,
+				5143B0AE1E282829005717AD /* SoftU2FDriver.hpp */,
 				514CF0BD1E2832C6004203C6 /* SoftU2FDevice.cpp */,
 				514CF0BE1E2832C6004203C6 /* SoftU2FDevice.hpp */,
 				5143B0B81E282941005717AD /* SoftU2FUserClient.cpp */,

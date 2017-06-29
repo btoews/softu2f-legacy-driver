@@ -20,7 +20,6 @@ class SoftU2FUserClientClassName : public IOUserClient {
 
 protected:
   SoftU2FDriverClassName *fProvider;
-  task_t fTask;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
@@ -34,7 +33,7 @@ public:
 
   virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
 
-  virtual bool frameReceived(IOMemoryDescriptor *report);
+  virtual void frameReceived(IOMemoryDescriptor *report);
 
 protected:
   virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;
@@ -44,7 +43,7 @@ protected:
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
 
   static IOReturn sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
-  virtual IOReturn notifyFrame(io_user_reference_t *ref);
+  virtual IOReturn notifyFrame(io_user_reference_t *ref, uint32_t refCount);
 };
 
 #endif /* SoftU2FUserClient_hpp */

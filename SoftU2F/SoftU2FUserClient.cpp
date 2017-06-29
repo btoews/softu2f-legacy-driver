@@ -14,24 +14,24 @@
 
 OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
 
-    /**
-     * A dispatch table for this User Client interface, used by
-     * 'SoftU2FUserClientClassName::externalMethod()'.
-     * The fields of the IOExternalMethodDispatch type follows:
-     *
-     *  struct IOExternalMethodDispatch
-     *  {
-     *      IOExternalMethodAction function;
-     *      uint32_t		   checkScalarInputCount;
-     *      uint32_t		   checkStructureInputSize;
-     *      uint32_t		   checkScalarOutputCount;
-     *      uint32_t		   checkStructureOutputSize;
-     *  };
-     */
-    const IOExternalMethodDispatch
-    SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
-        {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
+/**
+ * A dispatch table for this User Client interface, used by
+ * 'SoftU2FUserClientClassName::externalMethod()'.
+ * The fields of the IOExternalMethodDispatch type follows:
+ *
+ *  struct IOExternalMethodDispatch
+ *  {
+ *      IOExternalMethodAction function;
+ *      uint32_t		   checkScalarInputCount;
+ *      uint32_t		   checkStructureInputSize;
+ *      uint32_t		   checkScalarOutputCount;
+ *      uint32_t		   checkStructureOutputSize;
+ *  };
+ */
+const IOExternalMethodDispatch
+SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
+    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
+    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
 };
 
 IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
@@ -56,7 +56,6 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityT
   // superclass initialization.
   //  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
 
-  fTask = owningTask;
   fProvider = NULL;
 
   return success;
@@ -74,9 +73,8 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
     return false;
 
   IOService *device = fProvider->userClientDevice(this);
-  if (!device) {
+  if (!device)
     return false;
-  }
 
   return super::start(provider);
 }
@@ -101,8 +99,7 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
   // open. This should never happen in our case because this code path is only
   // reached if the user process explicitly requests closing the connection to
   // the user client.
-  bool success = terminate();
-  if (!success) {
+  if (!terminate()) {
         IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
   }
 
@@ -122,11 +119,12 @@ bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits 
   return super::didTerminate(provider, options, defer);
 }
 
-bool SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
-  bool ret = false;
+void SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
   IOMemoryMap *reportMap;
 
-  report->prepare();
+  if (report->prepare() != kIOReturnSuccess)
+    return;
+  
   reportMap = report->map();
 
   // Notify userland that we got a report.
@@ -135,10 +133,8 @@ bool SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
     sendAsyncResult64(*fNotifyRef, kIOReturnSuccess, args, sizeof(U2FHID_FRAME) / sizeof(io_user_reference_t));
   }
 
-  report->complete();
   reportMap->release();
-
-  return ret;
+  report->complete();
 }
 
 IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
@@ -148,21 +144,21 @@ IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *targ
 IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
   if (!fProvider)
     return kIOReturnNotAttached;
+
   if (frameSize != HID_RPT_SIZE)
     return kIOReturnBadArgument;
 
-  if (fProvider->userClientDeviceSend(this, frame)) {
-    return kIOReturnSuccess;
-  } else {
+  if (!fProvider->userClientDeviceSend(this, frame))
     return kIOReturnError;
-  }
+  
+  return kIOReturnSuccess;
 }
 
 IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
-  return target->notifyFrame(arguments->asyncReference);
+  return target->notifyFrame(arguments->asyncReference, arguments->asyncReferenceCount);
 }
 
-IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
+IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref, uint32_t refCount) {
   if (!fProvider)
     return kIOReturnNotAttached;
 
@@ -175,7 +171,9 @@ IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref) {
   if (!fNotifyRef)
     return kIOReturnNoMemory;
 
-  memcpy(fNotifyRef, ref, sizeof(OSAsyncReference64));
+  bzero(fNotifyRef, sizeof(OSAsyncReference64));
+
+  memcpy(fNotifyRef, ref, sizeof(io_user_reference_t) * refCount);
 
   return kIOReturnSuccess;
 }
