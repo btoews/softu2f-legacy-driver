@@ -33,8 +33,7 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
     IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Terminate and release every managed HID device.
-  OSCollectionIterator *iter =
-      OSCollectionIterator::withCollection(m_hid_devices);
+  OSCollectionIterator *iter = OSCollectionIterator::withCollection(m_hid_devices);
   if (iter) {
     const char *key = nullptr;
 
@@ -43,7 +42,10 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
 
       if (device) {
         IOLog("Terminating device.");
-        device->terminate();
+
+        if (!device->isInactive())
+          device->terminate();
+
         device->release();
       }
     }
@@ -136,7 +138,9 @@ bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
   if (!device)
     goto fail;
 
-  device->terminate();
+  if (!device->isInactive())
+    device->terminate();
+
   m_hid_devices->removeObject(key);
   key->release();
   device->release();
