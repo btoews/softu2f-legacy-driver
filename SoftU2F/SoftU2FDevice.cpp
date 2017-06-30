@@ -16,6 +16,7 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FDevice, IOHIDDevice)
 void SoftU2FDeviceClassName::free() {
   if (dUserClient) {
     dUserClient->release();
+    dUserClient = nullptr;
   }
 
   super::free();
@@ -57,8 +58,16 @@ OSNumber *SoftU2FDeviceClassName::newProductIDNumber() const {
   return OSNumber::withNumber(123, 32);
 }
 
+OSNumber *SoftU2FDeviceClassName::newVersionNumber() const {
+  return OSNumber::withNumber(1, 32);
+}
+
+OSNumber* SoftU2FDeviceClassName::newPrimaryUsagePageNumber() const {
+  return OSNumber::withNumber(0x0F1D0, 32);
+}
+
 OSNumber* SoftU2FDeviceClassName::newPrimaryUsageNumber() const {
-  return OSNumber::withNumber(kHIDUsage_PID_TriggerButton, 32);
+  return OSNumber::withNumber(0x01, 32);
 }
 
 bool SoftU2FDeviceClassName::setUserClient(IOService *userClient) {

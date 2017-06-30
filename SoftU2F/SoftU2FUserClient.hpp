@@ -19,7 +19,8 @@ class SoftU2FUserClientClassName : public IOUserClient {
   OSDeclareDefaultStructors(com_github_SoftU2FUserClient)
 
 protected:
-  SoftU2FDriverClassName *fProvider;
+  IOService *fDevice = nullptr;
+  SoftU2FDriverClassName *fProvider = nullptr;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
@@ -27,11 +28,13 @@ public:
   // IOUserClient methods
   virtual bool start(IOService *provider) override;
 
-  virtual bool initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) override;
-
   virtual IOReturn clientClose(void) override;
 
   virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
+  
+  virtual void setDevice(IOService *device);
+
+  virtual IOService* getDevice();
 
   virtual void frameReceived(IOMemoryDescriptor *report);
 

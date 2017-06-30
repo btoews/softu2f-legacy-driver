@@ -17,19 +17,14 @@ class SoftU2FDriverClassName : public IOService {
 
 public :
   // IOService methods
-  virtual bool init(OSDictionary *dictionary = 0) override;
-  virtual void free(void) override;
-
   virtual bool start(IOService *provider) override;
   virtual void stop(IOService *provider) override;
+  
+  virtual IOReturn newUserClient(task_t owningTask, void * securityID, UInt32 type, OSDictionary * properties, IOUserClient ** handler) override;
 
-  virtual OSString *userClientKey(IOService *userClient);
-  virtual IOService *userClientDevice(IOService *userClient);
+  // Our methods
   virtual bool destroyUserClientDevice(IOService *userClient);
   virtual bool userClientDeviceSend(IOService *userClient, U2FHID_FRAME *frame);
-
-private:
-  OSDictionary *m_hid_devices;
 };
 
 #endif /* SoftU2F_hpp */

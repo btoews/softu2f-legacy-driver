@@ -19,172 +19,168 @@ bool SoftU2FDriverClassName::start(IOService *provider) {
 
   IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
-  success = super::start(provider);
-
-  if (success) {
-    // Publish ourselves so clients can find us
+  if (( success = super::start(provider) ))
     registerService();
-  }
 
   return success;
 }
 
 void SoftU2FDriverClassName::stop(IOService *provider) {
-    IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+  OSIterator *iter;
+  OSObject *obj;
+  SoftU2FUserClientClassName *userClient;
+  SoftU2FDeviceClassName *device;
 
-  // Terminate and release every managed HID device.
-  OSCollectionIterator *iter = OSCollectionIterator::withCollection(m_hid_devices);
-  if (iter) {
-    const char *key = nullptr;
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
-    while ((key = (char *)iter->getNextObject())) {
-      SoftU2FDeviceClassName *device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
-
-      if (device) {
-        IOLog("Terminating device.");
-
-        if (!device->isInactive() && !device->terminate())
-          IOLog("Error terminating device.");
-
-        device->release();
-      }
-    }
-
-    iter->release();
+  // iterate through user clients and terminate their devices.
+  iter = this->getClientIterator();
+  if (!iter) {
+    IOLog("Coulnd't get client iterator");
+    goto done;
   }
 
+  while (( obj = iter->getNextObject() )) {
+    userClient = OSDynamicCast(SoftU2FUserClientClassName, obj);
+    if (!userClient) {
+      IOLog("Userclient isn't a SoftU2FUserClientClassName");
+      continue;
+    }
+
+    device = OSDynamicCast(SoftU2FDeviceClassName, userClient->getDevice());
+    if (!device) {
+      IOLog("Couldn't get user client device");
+      continue;
+    }
+
+    if (!device->isInactive() && !device->terminate())
+      IOLog("Error terminating device.");
+
+    device->release();
+    userClient->setDevice(nullptr);
+  }
+
+  iter->release();
+
+done:
   super::stop(provider);
 }
 
-bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
-  if (!super::init(dictionary)) {
-    return false;
-  }
-
-  // This IOLog must follow super::init because getName relies on the superclass
-  // initialization.
-  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, dictionary);
-
-  // Setup HID devices dictionary.
-  m_hid_devices = OSDictionary::withCapacity(1);
-  if (!m_hid_devices) {
-    IOLog("Unable to inizialize HID devices dictionary.");
-    return false;
-  }
-
-  return true;
-}
-
-// We override free only to log that it has been called to make it easier to
-// follow the driver's lifecycle.
-void SoftU2FDriverClassName::free(void) {
+IOReturn SoftU2FDriverClassName::newUserClient(task_t owningTask, void *securityID, UInt32 type, OSDictionary *properties, IOUserClient **handler) {
+  SoftU2FUserClientClassName *userClient = nullptr;
+  SoftU2FDeviceClassName *device = nullptr;
+  
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
-
-  // Clear the HID devices dictionary.
-  if (m_hid_devices) {
-    m_hid_devices->release();
+  
+  IOReturn ret = super::newUserClient(owningTask, securityID, type, properties, handler);
+  if (ret != kIOReturnSuccess) {
+    IOLog("Error creating user client");
+    return ret;
+  }
+  
+  if (*handler == nullptr) {
+    IOLog("Null user client");
+    return kIOReturnError;
+  }
+  
+  userClient = OSDynamicCast(SoftU2FUserClientClassName, *handler);
+  if (!userClient) {
+    IOLog("User client isn't a SoftU2FUserClientClassName");
+    return kIOReturnError;
   }
 
-  super::free();
-}
-
-OSString *SoftU2FDriverClassName::userClientKey(IOService *userClient) {
-  char cKey[64]; // extra space, since %p format isn't guaranteed
-  snprintf(cKey, 64, "%p", userClient);
-
-  return OSString::withCString(cKey);
-}
-
-IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
-  SoftU2FDeviceClassName *device = nullptr;
-
-  OSString *key = userClientKey(userClient);
-  if (!key)
-    goto fail_key;
-
-  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
-
+  device = OSTypeAlloc(SoftU2FDeviceClassName);
   if (!device) {
-    device = OSTypeAlloc(SoftU2FDeviceClassName);
-    if (!device)
-      goto fail_device;
-
-    if (!device->init(nullptr))
-      goto fail_device;
-
-    if (!m_hid_devices->setObject(key, device))
-      goto fail_device;
-
-    if (!device->attach(this))
-      goto fail_device;
-
-    if (!device->start(this))
-      goto fail_device;
-    
-    device->setUserClient(userClient);
+    IOLog("Error allocating memory for user client device");
+    return kIOReturnNoMemory;
+  }
+  
+  if (!device->init(nullptr)) {
+    IOLog("Error initializing user client device");
+    device->free();
+    return kIOReturnError;
   }
 
-  return device;
-
-fail_device:
-  if (device)
-    device->release();
-
-fail_key:
-  if (key)
-    key->release();
-
-  return nullptr;
+  if (!device->attach(this)) {
+    IOLog("Error attaching device");
+    device->free();
+    return kIOReturnError;
+  }
+  
+  if (!device->start(this)) {
+    IOLog("Error starting device");
+    device->free();
+    return kIOReturnError;
+  }
+  
+  device->setUserClient(userClient);
+  userClient->setDevice(device);
+  
+  return kIOReturnSuccess;
 }
 
-bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
+bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *service) {
+  SoftU2FUserClientClassName *userClient = nullptr;
   SoftU2FDeviceClassName *device = nullptr;
+  
+  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+  
+  userClient = OSDynamicCast(SoftU2FUserClientClassName, service);
+  if (!userClient) {
+    IOLog("Service isn't a SoftU2FUserClientClassName");
+    return false;
+  }
 
-  OSString *key = userClientKey(userClient);
-  if (!key)
-    goto fail_key;
+  device = OSDynamicCast(SoftU2FDeviceClassName, userClient->getDevice());
+  if (!device) {
+    IOLog("Error getting user client device");
+    return false;
+  }
 
-  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
-  if (!device)
-    goto fail_device;
-
-  if (!device->isInactive())
-    device->terminate();
-
-  m_hid_devices->removeObject(key);
-  key->release();
+  if (!device->isInactive()) {
+    IOLog("Terminating device");
+    if (!device->terminate()) {
+      IOLog("Error terminating device. Client attached?");
+    }
+  }
+  
+  userClient->setDevice(nullptr);
   device->release();
 
   return true;
-
-fail_device:
-  if (device)
-    device->release();
-
-fail_key:
-  if (key)
-    key->release();
-
-  return false;
 }
 
-bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_FRAME *frame) {
+bool SoftU2FDriverClassName::userClientDeviceSend(IOService *service, U2FHID_FRAME *frame) {
+  SoftU2FUserClientClassName *userClient = nullptr;
+  SoftU2FDeviceClassName *device = nullptr;
   IOMemoryDescriptor *report = nullptr;
-  SoftU2FDeviceClassName *device;
   bool ret = false;
-
-  device = OSDynamicCast(SoftU2FDeviceClassName, userClientDevice(userClient));
-  if (!device)
+  
+  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
+  
+  userClient = OSDynamicCast(SoftU2FUserClientClassName, service);
+  if (!userClient) {
+    IOLog("Service isn't a SoftU2FUserClientClassName");
     return false;
+  }
+
+  device = OSDynamicCast(SoftU2FDeviceClassName, userClient->getDevice());
+  if (!device) {
+    IOLog("Error getting user client device");
+    return false;
+  }
 
   report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
-  if (!report)
+  if (!report) {
+    IOLog("Error initializing IOBufferMemoryDescriptor");
     return false;
+  }
 
   report->writeBytes(0, frame, HID_RPT_SIZE);
 
-  if (device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess)
-    ret = true;
+  ret = device->handleReport(report, kIOHIDReportTypeInput) == kIOReturnSuccess;
+  if (!ret)
+    IOLog("Error sending report to device");
 
   report->release();
 

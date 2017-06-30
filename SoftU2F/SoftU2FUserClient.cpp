@@ -46,21 +46,6 @@ IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExterna
   return super::externalMethod(selector, arguments, dispatch, target, reference);
 }
 
-// initWithTask is called as a result of the user process calling IOServiceOpen.
-bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) {
-  bool success;
-
-  success = super::initWithTask(owningTask, securityToken, type, properties);
-
-  // This IOLog must follow super::initWithTask because getName relies on the
-  // superclass initialization.
-  //  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
-
-  fProvider = NULL;
-
-  return success;
-}
-
 // start is called after initWithTask as a result of the user process calling
 // IOServiceOpen.
 bool SoftU2FUserClientClassName::start(IOService *provider) {
@@ -70,10 +55,6 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
   // how to communicate with.
   fProvider = OSDynamicCast(SoftU2FDriverClassName, provider);
   if (!fProvider)
-    return false;
-
-  IOService *device = fProvider->userClientDevice(this);
-  if (!device)
     return false;
 
   return super::start(provider);
@@ -88,9 +69,8 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
     fNotifyRef = nullptr;
   }
 
-  if (!fProvider->destroyUserClientDevice(this)) {
+  if (!fProvider->destroyUserClientDevice(this))
     return kIOReturnError;
-  }
 
   // Inform the user process that this user client is no longer available. This
   // will also cause the user client instance to be destroyed.
@@ -99,9 +79,8 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
   // open. This should never happen in our case because this code path is only
   // reached if the user process explicitly requests closing the connection to
   // the user client.
-  if (!terminate()) {
-        IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
-  }
+  if (!terminate())
+    IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
 
   // DON'T call super::clientClose, which just returns kIOReturnUnsupported.
 
@@ -117,6 +96,20 @@ bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits 
   *defer = false;
 
   return super::didTerminate(provider, options, defer);
+}
+
+void SoftU2FUserClientClassName::setDevice(IOService *device) {
+  if (fDevice)
+    fDevice->release();
+
+  if (device)
+    device->retain();
+
+  fDevice = device;
+}
+
+IOService* SoftU2FUserClientClassName::getDevice() {
+  return fDevice;
 }
 
 void SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
