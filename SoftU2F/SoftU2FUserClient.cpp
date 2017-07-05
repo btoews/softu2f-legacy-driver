@@ -81,6 +81,8 @@ bool SoftU2FUserClient::start(IOService *provider) {
 
   if (!device->start(this))
     goto fail_device_start;
+  
+  device->release();
 
   return true;
 
