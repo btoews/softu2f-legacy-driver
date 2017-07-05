@@ -27,7 +27,9 @@ bool SoftU2FDriver::start(IOService *provider) {
 }
 
 void SoftU2FDriver::free() {
+  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
   OSSafeReleaseNULL(_workLoop);
+  super::free();
 }
 
 IOWorkLoop* SoftU2FDriver::getWorkLoop() const {
