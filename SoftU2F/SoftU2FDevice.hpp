@@ -33,13 +33,11 @@ unsigned char const u2fhid_report_descriptor[] = {
     0xC0,             // End Collection
 };
 
-#define SoftU2FDeviceClassName com_github_SoftU2FDevice
-
-class SoftU2FDeviceClassName : public IOHIDDevice {
-  OSDeclareDefaultStructors(com_github_SoftU2FDevice)
+class SoftU2FDevice : public IOHIDDevice {
+  OSDeclareDefaultStructors(SoftU2FDevice)
 
 protected:
-  SoftU2FUserClientClassName *dUserClient;
+  SoftU2FUserClient *dUserClient;
 
 public:
   virtual void free(void) override;

@@ -12,11 +12,11 @@
 
 #define super IOUserClient
 
-OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
+OSDefineMetaClassAndStructors(SoftU2FUserClient, IOUserClient)
 
 /**
  * A dispatch table for this User Client interface, used by
- * 'SoftU2FUserClientClassName::externalMethod()'.
+ * 'SoftU2FUserClient::externalMethod()'.
  * The fields of the IOExternalMethodDispatch type follows:
  *
  *  struct IOExternalMethodDispatch
@@ -29,12 +29,12 @@ OSDefineMetaClassAndStructors(com_github_SoftU2FUserClient, IOUserClient)
  *  };
  */
 const IOExternalMethodDispatch
-SoftU2FUserClientClassName::sMethods[kNumberOfMethods] = {
-    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
-    {(IOExternalMethodAction)&SoftU2FUserClientClassName::sNotifyFrame, 0, 0, 0, 0},
+SoftU2FUserClient::sMethods[kNumberOfMethods] = {
+    {(IOExternalMethodAction)&SoftU2FUserClient::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
+    {(IOExternalMethodAction)&SoftU2FUserClient::sNotifyFrame, 0, 0, 0, 0},
 };
 
-IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
+IOReturn SoftU2FUserClient::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
   if (selector < (uint32_t)kNumberOfMethods) {
     dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
 
@@ -47,7 +47,7 @@ IOReturn SoftU2FUserClientClassName::externalMethod(uint32_t selector, IOExterna
 }
 
 // initWithTask is called as a result of the user process calling IOServiceOpen.
-bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) {
+bool SoftU2FUserClient::initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) {
   bool success;
 
   success = super::initWithTask(owningTask, securityToken, type, properties);
@@ -63,12 +63,12 @@ bool SoftU2FUserClientClassName::initWithTask(task_t owningTask, void *securityT
 
 // start is called after initWithTask as a result of the user process calling
 // IOServiceOpen.
-bool SoftU2FUserClientClassName::start(IOService *provider) {
+bool SoftU2FUserClient::start(IOService *provider) {
     IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Verify that this user client is being started with a provider that it knows
   // how to communicate with.
-  fProvider = OSDynamicCast(SoftU2FDriverClassName, provider);
+  fProvider = OSDynamicCast(SoftU2FDriver, provider);
   if (!fProvider)
     return false;
 
@@ -80,7 +80,7 @@ bool SoftU2FUserClientClassName::start(IOService *provider) {
 }
 
 // clientClose is called as a result of the user process calling IOServiceClose.
-IOReturn SoftU2FUserClientClassName::clientClose(void) {
+IOReturn SoftU2FUserClient::clientClose(void) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   if (fNotifyRef) {
@@ -111,7 +111,7 @@ IOReturn SoftU2FUserClientClassName::clientClose(void) {
 // didTerminate is called at the end of the termination process. It is a
 // notification that a provider has been terminated, sent after recursing
 // up the stack, in leaf-to-root order.
-bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
+bool SoftU2FUserClient::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
   IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
 
   *defer = false;
@@ -119,12 +119,12 @@ bool SoftU2FUserClientClassName::didTerminate(IOService *provider, IOOptionBits 
   return super::didTerminate(provider, options, defer);
 }
 
-void SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
+void SoftU2FUserClient::frameReceived(IOMemoryDescriptor *report) {
   IOMemoryMap *reportMap;
 
   if (report->prepare() != kIOReturnSuccess)
     return;
-  
+
   reportMap = report->map();
 
   // Notify userland that we got a report.
@@ -137,11 +137,11 @@ void SoftU2FUserClientClassName::frameReceived(IOMemoryDescriptor *report) {
   report->complete();
 }
 
-IOReturn SoftU2FUserClientClassName::sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClient::sSendFrame(SoftU2FUserClient *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->sendFrame((U2FHID_FRAME *)arguments->structureInput, arguments->structureInputSize);
 }
 
-IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
+IOReturn SoftU2FUserClient::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
   if (!fProvider)
     return kIOReturnNotAttached;
 
@@ -150,15 +150,15 @@ IOReturn SoftU2FUserClientClassName::sendFrame(U2FHID_FRAME *frame, size_t frame
 
   if (!fProvider->userClientDeviceSend(this, frame))
     return kIOReturnError;
-  
+
   return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FUserClientClassName::sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments) {
+IOReturn SoftU2FUserClient::sNotifyFrame(SoftU2FUserClient *target, void *reference, IOExternalMethodArguments *arguments) {
   return target->notifyFrame(arguments->asyncReference, arguments->asyncReferenceCount);
 }
 
-IOReturn SoftU2FUserClientClassName::notifyFrame(io_user_reference_t *ref, uint32_t refCount) {
+IOReturn SoftU2FUserClient::notifyFrame(io_user_reference_t *ref, uint32_t refCount) {
   if (!fProvider)
     return kIOReturnNotAttached;
 

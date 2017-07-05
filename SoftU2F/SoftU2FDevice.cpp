@@ -11,9 +11,9 @@
 #include <IOKit/IOLib.h>
 
 #define super IOHIDDevice
-OSDefineMetaClassAndStructors(com_github_SoftU2FDevice, IOHIDDevice)
+OSDefineMetaClassAndStructors(SoftU2FDevice, IOHIDDevice)
 
-void SoftU2FDeviceClassName::free() {
+void SoftU2FDevice::free() {
   if (dUserClient) {
     dUserClient->release();
   }
@@ -21,7 +21,7 @@ void SoftU2FDeviceClassName::free() {
   super::free();
 }
 
-IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
+IOReturn SoftU2FDevice::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
   IOBufferMemoryDescriptor *buffer = IOBufferMemoryDescriptor::withBytes(u2fhid_report_descriptor, sizeof(u2fhid_report_descriptor), kIODirectionNone);
   if (!buffer)
     return kIOReturnNoResources;
@@ -31,7 +31,7 @@ IOReturn SoftU2FDeviceClassName::newReportDescriptor(IOMemoryDescriptor **descri
   return kIOReturnSuccess;
 }
 
-IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
+IOReturn SoftU2FDevice::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
   if (dUserClient)
     dUserClient->frameReceived(report);
 
@@ -41,29 +41,29 @@ IOReturn SoftU2FDeviceClassName::setReport(IOMemoryDescriptor *report, IOHIDRepo
   return kIOReturnSuccess;
 }
 
-OSString *SoftU2FDeviceClassName::newProductString() const {
+OSString *SoftU2FDevice::newProductString() const {
   return OSString::withCString("SoftU2F");
 }
 
-OSString *SoftU2FDeviceClassName::newSerialNumberString() const {
+OSString *SoftU2FDevice::newSerialNumberString() const {
   return OSString::withCString("123");
 }
 
-OSNumber *SoftU2FDeviceClassName::newVendorIDNumber() const {
+OSNumber *SoftU2FDevice::newVendorIDNumber() const {
   return OSNumber::withNumber(123, 32);
 }
 
-OSNumber *SoftU2FDeviceClassName::newProductIDNumber() const {
+OSNumber *SoftU2FDevice::newProductIDNumber() const {
   return OSNumber::withNumber(123, 32);
 }
 
-OSNumber* SoftU2FDeviceClassName::newPrimaryUsageNumber() const {
+OSNumber* SoftU2FDevice::newPrimaryUsageNumber() const {
   return OSNumber::withNumber(kHIDUsage_PID_TriggerButton, 32);
 }
 
-bool SoftU2FDeviceClassName::setUserClient(IOService *userClient) {
-  dUserClient = OSDynamicCast(SoftU2FUserClientClassName, userClient);
-  
+bool SoftU2FDevice::setUserClient(IOService *userClient) {
+  dUserClient = OSDynamicCast(SoftU2FUserClient, userClient);
+
   if (!dUserClient)
     return false;
 

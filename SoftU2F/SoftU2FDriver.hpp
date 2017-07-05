@@ -12,8 +12,8 @@
 #include "u2f_hid.h"
 #include <IOKit/IOService.h>
 
-class SoftU2FDriverClassName : public IOService {
-  OSDeclareDefaultStructors(com_github_SoftU2FDriver)
+class SoftU2FDriver : public IOService {
+  OSDeclareDefaultStructors(SoftU2FDriver)
 
 public :
   // IOService methods

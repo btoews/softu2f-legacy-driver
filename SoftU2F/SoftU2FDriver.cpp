@@ -12,9 +12,9 @@
 #include "SoftU2FUserClient.hpp"
 
 #define super IOService
-OSDefineMetaClassAndStructors(com_github_SoftU2FDriver, IOService);
+OSDefineMetaClassAndStructors(SoftU2FDriver, IOService);
 
-bool SoftU2FDriverClassName::start(IOService *provider) {
+bool SoftU2FDriver::start(IOService *provider) {
   bool success;
 
   IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
@@ -29,7 +29,7 @@ bool SoftU2FDriverClassName::start(IOService *provider) {
   return success;
 }
 
-void SoftU2FDriverClassName::stop(IOService *provider) {
+void SoftU2FDriver::stop(IOService *provider) {
     IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   // Terminate and release every managed HID device.
@@ -38,7 +38,7 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
     const char *key = nullptr;
 
     while ((key = (char *)iter->getNextObject())) {
-      SoftU2FDeviceClassName *device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
+      SoftU2FDevice *device = OSDynamicCast(SoftU2FDevice, m_hid_devices->getObject(key));
 
       if (device) {
         IOLog("Terminating device.");
@@ -56,7 +56,7 @@ void SoftU2FDriverClassName::stop(IOService *provider) {
   super::stop(provider);
 }
 
-bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
+bool SoftU2FDriver::init(OSDictionary *dictionary) {
   if (!super::init(dictionary)) {
     return false;
   }
@@ -77,7 +77,7 @@ bool SoftU2FDriverClassName::init(OSDictionary *dictionary) {
 
 // We override free only to log that it has been called to make it easier to
 // follow the driver's lifecycle.
-void SoftU2FDriverClassName::free(void) {
+void SoftU2FDriver::free(void) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
   // Clear the HID devices dictionary.
@@ -88,24 +88,24 @@ void SoftU2FDriverClassName::free(void) {
   super::free();
 }
 
-OSString *SoftU2FDriverClassName::userClientKey(IOService *userClient) {
+OSString *SoftU2FDriver::userClientKey(IOService *userClient) {
   char cKey[64]; // extra space, since %p format isn't guaranteed
   snprintf(cKey, 64, "%p", userClient);
 
   return OSString::withCString(cKey);
 }
 
-IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
-  SoftU2FDeviceClassName *device = nullptr;
+IOService *SoftU2FDriver::userClientDevice(IOService *userClient) {
+  SoftU2FDevice *device = nullptr;
 
   OSString *key = userClientKey(userClient);
   if (!key)
     goto fail_key;
 
-  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
+  device = OSDynamicCast(SoftU2FDevice, m_hid_devices->getObject(key));
 
   if (!device) {
-    device = OSTypeAlloc(SoftU2FDeviceClassName);
+    device = OSTypeAlloc(SoftU2FDevice);
     if (!device)
       goto fail_device;
 
@@ -120,7 +120,7 @@ IOService *SoftU2FDriverClassName::userClientDevice(IOService *userClient) {
 
     if (!device->start(this))
       goto fail_device;
-    
+
     device->setUserClient(userClient);
   }
 
@@ -137,14 +137,14 @@ fail_key:
   return nullptr;
 }
 
-bool SoftU2FDriverClassName::destroyUserClientDevice(IOService *userClient) {
-  SoftU2FDeviceClassName *device = nullptr;
+bool SoftU2FDriver::destroyUserClientDevice(IOService *userClient) {
+  SoftU2FDevice *device = nullptr;
 
   OSString *key = userClientKey(userClient);
   if (!key)
     goto fail_key;
 
-  device = OSDynamicCast(SoftU2FDeviceClassName, m_hid_devices->getObject(key));
+  device = OSDynamicCast(SoftU2FDevice, m_hid_devices->getObject(key));
   if (!device)
     goto fail_device;
 
@@ -168,12 +168,12 @@ fail_key:
   return false;
 }
 
-bool SoftU2FDriverClassName::userClientDeviceSend(IOService *userClient, U2FHID_FRAME *frame) {
+bool SoftU2FDriver::userClientDeviceSend(IOService *userClient, U2FHID_FRAME *frame) {
   IOMemoryDescriptor *report = nullptr;
-  SoftU2FDeviceClassName *device;
+  SoftU2FDevice *device;
   bool ret = false;
 
-  device = OSDynamicCast(SoftU2FDeviceClassName, userClientDevice(userClient));
+  device = OSDynamicCast(SoftU2FDevice, userClientDevice(userClient));
   if (!device)
     return false;
 

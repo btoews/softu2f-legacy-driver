@@ -13,13 +13,11 @@
 #include <IOKit/IOService.h>
 #include <IOKit/IOUserClient.h>
 
-#define SoftU2FUserClientClassName com_github_SoftU2FUserClient
-
-class SoftU2FUserClientClassName : public IOUserClient {
-  OSDeclareDefaultStructors(com_github_SoftU2FUserClient)
+class SoftU2FUserClient : public IOUserClient {
+  OSDeclareDefaultStructors(SoftU2FUserClient)
 
 protected:
-  SoftU2FDriverClassName *fProvider;
+  SoftU2FDriver *fProvider;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
@@ -39,10 +37,10 @@ protected:
   virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) override;
 
   // User client methods
-  static IOReturn sSendFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
+  static IOReturn sSendFrame(SoftU2FUserClient *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn sendFrame(U2FHID_FRAME *frame, size_t frameSize);
 
-  static IOReturn sNotifyFrame(SoftU2FUserClientClassName *target, void *reference, IOExternalMethodArguments *arguments);
+  static IOReturn sNotifyFrame(SoftU2FUserClient *target, void *reference, IOExternalMethodArguments *arguments);
   virtual IOReturn notifyFrame(io_user_reference_t *ref, uint32_t refCount);
 };
 
