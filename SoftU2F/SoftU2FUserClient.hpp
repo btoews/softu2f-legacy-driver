@@ -20,8 +20,8 @@ class SoftU2FUserClient : public IOUserClient {
 
 private:
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
-  OSAsyncReference64 *_notifyRef;
-  IOCommandGate *_commandGate;
+  OSAsyncReference64 *_notifyRef = nullptr;
+  IOCommandGate *_commandGate = nullptr;
 
   typedef struct {
     uint32_t                    selector;

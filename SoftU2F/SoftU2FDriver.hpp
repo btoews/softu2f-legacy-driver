@@ -14,7 +14,7 @@
 class SoftU2FDriver : public IOService {
   OSDeclareDefaultStructors(SoftU2FDriver)
 
-  IOWorkLoop *_workLoop;
+  IOWorkLoop *_workLoop = nullptr;
 
 public :
   virtual bool start(IOService *provider) override;
