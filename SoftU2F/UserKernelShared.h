@@ -9,8 +9,7 @@
 #ifndef UserKernelShared_h
 #define UserKernelShared_h
 
-#define SoftU2FDriverClassName com_github_SoftU2FDriver
-#define kSoftU2FDriverClassName "com_github_SoftU2FDriver"
+#define kSoftU2FDriverClassName "SoftU2FDriver"
 
 // User client method dispatch selectors.
 enum {
