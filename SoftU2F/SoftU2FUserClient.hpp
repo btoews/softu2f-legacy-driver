@@ -9,7 +9,8 @@
 #ifndef SoftU2FUserClient_hpp
 #define SoftU2FUserClient_hpp
 
-#include "SoftU2FDriver.hpp"
+#include "u2f_hid.h"
+#include "UserKernelShared.h"
 #include <IOKit/IOService.h>
 #include <IOKit/IOUserClient.h>
 
@@ -17,19 +18,15 @@ class SoftU2FUserClient : public IOUserClient {
   OSDeclareDefaultStructors(SoftU2FUserClient)
 
 protected:
-  SoftU2FDriver *fProvider;
   OSAsyncReference64 *fNotifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
 public:
-  // IOUserClient methods
+  virtual void free() override;
+
   virtual bool start(IOService *provider) override;
 
-  virtual bool initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) override;
-
   virtual IOReturn clientClose(void) override;
-
-  virtual bool didTerminate(IOService *provider, IOOptionBits options, bool *defer) override;
 
   virtual void frameReceived(IOMemoryDescriptor *report);
 

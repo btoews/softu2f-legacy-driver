@@ -13,12 +13,21 @@
 #define super IOHIDDevice
 OSDefineMetaClassAndStructors(SoftU2FDevice, IOHIDDevice)
 
-void SoftU2FDevice::free() {
-  if (dUserClient) {
-    dUserClient->release();
-  }
+SoftU2FDevice* SoftU2FDevice::newDevice() {
+  SoftU2FDevice *device = new SoftU2FDevice;
+  if (!device)
+    goto fail;
 
-  super::free();
+  if (!device->init(nullptr))
+    goto fail;
+
+  return device;
+
+fail:
+  if (device)
+    device->release();
+
+  return nullptr;
 }
 
 IOReturn SoftU2FDevice::newReportDescriptor(IOMemoryDescriptor **descriptor) const {
@@ -32,8 +41,9 @@ IOReturn SoftU2FDevice::newReportDescriptor(IOMemoryDescriptor **descriptor) con
 }
 
 IOReturn SoftU2FDevice::setReport(IOMemoryDescriptor *report, IOHIDReportType reportType, IOOptionBits options) {
-  if (dUserClient)
-    dUserClient->frameReceived(report);
+  SoftU2FUserClient *userClient = OSDynamicCast(SoftU2FUserClient, getProvider());
+  if (userClient)
+    userClient->frameReceived(report);
 
   // Sleep for a bit to make the HID conformance tests happy.
   IOSleep(1); // 1ms
@@ -59,14 +69,4 @@ OSNumber *SoftU2FDevice::newProductIDNumber() const {
 
 OSNumber* SoftU2FDevice::newPrimaryUsageNumber() const {
   return OSNumber::withNumber(kHIDUsage_PID_TriggerButton, 32);
-}
-
-bool SoftU2FDevice::setUserClient(IOService *userClient) {
-  dUserClient = OSDynamicCast(SoftU2FUserClient, userClient);
-
-  if (!dUserClient)
-    return false;
-
-  dUserClient->retain();
-  return true;
 }

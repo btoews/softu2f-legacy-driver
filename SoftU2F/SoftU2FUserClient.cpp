@@ -7,6 +7,8 @@
 //
 
 #include "SoftU2FUserClient.hpp"
+#include "SoftU2FDevice.hpp"
+#include "SoftU2FDriver.hpp"
 #include <IOKit/IOKitKeys.h>
 #include <IOKit/IOLib.h>
 
@@ -28,99 +30,89 @@ OSDefineMetaClassAndStructors(SoftU2FUserClient, IOUserClient)
  *      uint32_t		   checkStructureOutputSize;
  *  };
  */
-const IOExternalMethodDispatch
-SoftU2FUserClient::sMethods[kNumberOfMethods] = {
+const IOExternalMethodDispatch SoftU2FUserClient::sMethods[kNumberOfMethods] = {
     {(IOExternalMethodAction)&SoftU2FUserClient::sSendFrame, 0, sizeof(U2FHID_FRAME), 0, 0},
     {(IOExternalMethodAction)&SoftU2FUserClient::sNotifyFrame, 0, 0, 0, 0},
 };
 
 IOReturn SoftU2FUserClient::externalMethod(uint32_t selector, IOExternalMethodArguments *arguments, IOExternalMethodDispatch *dispatch, OSObject *target, void *reference) {
-  if (selector < (uint32_t)kNumberOfMethods) {
-    dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
+  if (isInactive())
+    return kIOReturnOffline;
 
-    if (!target) {
-      target = this;
-    }
-  }
+  if (selector >= (uint32_t)kNumberOfMethods)
+    return kIOReturnBadArgument;
+
+  dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
+
+  if (!target)
+    target = this;
 
   return super::externalMethod(selector, arguments, dispatch, target, reference);
 }
 
-// initWithTask is called as a result of the user process calling IOServiceOpen.
-bool SoftU2FUserClient::initWithTask(task_t owningTask, void *securityToken, UInt32 type, OSDictionary *properties) {
-  bool success;
+void SoftU2FUserClient::free() {
+  IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
-  success = super::initWithTask(owningTask, securityToken, type, properties);
+  if (fNotifyRef)
+    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
 
-  // This IOLog must follow super::initWithTask because getName relies on the
-  // superclass initialization.
-  //  IOLog("%s[%p]::%s(%p, %p, %u, %p)\n", getName(), this, __FUNCTION__, owningTask, securityToken, (unsigned int)type, properties);
-
-  fProvider = NULL;
-
-  return success;
+  return super::free();
 }
 
 // start is called after initWithTask as a result of the user process calling
 // IOServiceOpen.
 bool SoftU2FUserClient::start(IOService *provider) {
-    IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
-  // Verify that this user client is being started with a provider that it knows
-  // how to communicate with.
-  fProvider = OSDynamicCast(SoftU2FDriver, provider);
-  if (!fProvider)
-    return false;
+  SoftU2FDevice *device = nullptr;
 
-  IOService *device = fProvider->userClientDevice(this);
+  if (!OSDynamicCast(SoftU2FDriver, provider))
+    goto fail_bad_provider;
+
+  if (!super::start(provider))
+    goto fail_super_start;
+
+  device = SoftU2FDevice::newDevice();
   if (!device)
-    return false;
+    goto fail_new_device;
 
-  return super::start(provider);
+  if (!device->attach(this))
+    goto fail_device_attach;
+
+  if (!device->start(this))
+    goto fail_device_start;
+
+  return true;
+
+fail_device_start:
+  device->detach(this);
+
+fail_device_attach:
+  device->release();
+
+fail_new_device:
+  stop(provider);
+
+fail_super_start:
+fail_bad_provider:
+  return false;
 }
 
 // clientClose is called as a result of the user process calling IOServiceClose.
 IOReturn SoftU2FUserClient::clientClose(void) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
-  if (fNotifyRef) {
-    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
-    fNotifyRef = nullptr;
-  }
-
-  if (!fProvider->destroyUserClientDevice(this)) {
-    return kIOReturnError;
-  }
-
-  // Inform the user process that this user client is no longer available. This
-  // will also cause the user client instance to be destroyed.
-  //
-  // terminate would return false if the user process still had this user client
-  // open. This should never happen in our case because this code path is only
-  // reached if the user process explicitly requests closing the connection to
-  // the user client.
-  if (!terminate()) {
-        IOLog("%s[%p]::%s(): terminate() failed.\n", getName(), this, __FUNCTION__);
-  }
-
-  // DON'T call super::clientClose, which just returns kIOReturnUnsupported.
-
+  terminate();
   return kIOReturnSuccess;
 }
 
-// didTerminate is called at the end of the termination process. It is a
-// notification that a provider has been terminated, sent after recursing
-// up the stack, in leaf-to-root order.
-bool SoftU2FUserClient::didTerminate(IOService *provider, IOOptionBits options, bool *defer) {
-  IOLog("%s[%p]::%s(%p, %ld, %p)\n", getName(), this, __FUNCTION__, provider, (long)options, defer);
-
-  *defer = false;
-
-  return super::didTerminate(provider, options, defer);
-}
-
 void SoftU2FUserClient::frameReceived(IOMemoryDescriptor *report) {
-  IOMemoryMap *reportMap;
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, report);
+
+  IOMemoryMap *reportMap = nullptr;
+
+  if (isInactive())
+    return;
 
   if (report->prepare() != kIOReturnSuccess)
     return;
@@ -142,14 +134,31 @@ IOReturn SoftU2FUserClient::sSendFrame(SoftU2FUserClient *target, void *referenc
 }
 
 IOReturn SoftU2FUserClient::sendFrame(U2FHID_FRAME *frame, size_t frameSize) {
-  if (!fProvider)
-    return kIOReturnNotAttached;
+  SoftU2FDevice *device = nullptr;
+  IOMemoryDescriptor *report = nullptr;
+
+  if (isInactive())
+    return kIOReturnOffline;
 
   if (frameSize != HID_RPT_SIZE)
     return kIOReturnBadArgument;
 
-  if (!fProvider->userClientDeviceSend(this, frame))
+  device = OSDynamicCast(SoftU2FDevice, getClient());
+  if (!device)
+    return kIOReturnNotAttached;
+
+  report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, HID_RPT_SIZE);
+  if (!report)
+    return kIOReturnNoResources;
+
+  report->writeBytes(0, frame, frameSize);
+
+  if (device->handleReport(report) != kIOReturnSuccess) {
+    report->release();
     return kIOReturnError;
+  }
+
+  report->release();
 
   return kIOReturnSuccess;
 }
@@ -159,8 +168,8 @@ IOReturn SoftU2FUserClient::sNotifyFrame(SoftU2FUserClient *target, void *refere
 }
 
 IOReturn SoftU2FUserClient::notifyFrame(io_user_reference_t *ref, uint32_t refCount) {
-  if (!fProvider)
-    return kIOReturnNotAttached;
+  if (isInactive())
+    return kIOReturnOffline;
 
   if (fNotifyRef) {
     IOFree(fNotifyRef, sizeof(OSAsyncReference64));
