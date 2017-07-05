@@ -9,12 +9,17 @@
 #define SoftU2FDriver_hpp
 
 #include <IOKit/IOService.h>
+#include <IOKit/IOWorkLoop.h>
 
 class SoftU2FDriver : public IOService {
   OSDeclareDefaultStructors(SoftU2FDriver)
+  
+  IOWorkLoop *_workLoop;
 
 public :
   virtual bool start(IOService *provider) override;
+  void free() override;
+  IOWorkLoop* getWorkLoop() const override;
 };
 
 #endif /* SoftU2F_hpp */
