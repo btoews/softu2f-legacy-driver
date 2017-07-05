@@ -16,7 +16,7 @@ bool SoftU2FDriver::start(IOService *provider) {
 
   if (!super::start(provider))
     return false;
-  
+
   _workLoop = IOWorkLoop::workLoop();
   if (!_workLoop)
     return false;

@@ -13,7 +13,7 @@
 
 class SoftU2FDriver : public IOService {
   OSDeclareDefaultStructors(SoftU2FDriver)
-  
+
   IOWorkLoop *_workLoop;
 
 public :

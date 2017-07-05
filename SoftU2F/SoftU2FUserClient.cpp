@@ -39,15 +39,24 @@ IOReturn SoftU2FUserClient::externalMethod(uint32_t selector, IOExternalMethodAr
   if (isInactive())
     return kIOReturnOffline;
 
-  if (selector >= (uint32_t)kNumberOfMethods)
+  ExternalMethodGatedArguments gatedArguments = {selector, arguments, dispatch, target, reference};
+
+  return _commandGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &SoftU2FUserClient::externalMethodGated), &gatedArguments);
+}
+
+IOReturn SoftU2FUserClient::externalMethodGated(ExternalMethodGatedArguments *arguments) {
+  if (isInactive())
+    return kIOReturnOffline;
+
+  if (arguments->selector >= (uint32_t)kNumberOfMethods)
     return kIOReturnBadArgument;
 
-  dispatch = (IOExternalMethodDispatch *)&sMethods[selector];
+  arguments->dispatch = (IOExternalMethodDispatch *)&sMethods[arguments->selector];
 
-  if (!target)
-    target = this;
+  if (!arguments->target)
+    arguments->target = this;
 
-  return super::externalMethod(selector, arguments, dispatch, target, reference);
+  return super::externalMethod(arguments->selector, arguments->arguments, arguments->dispatch, arguments->target, arguments->reference);
 }
 
 void SoftU2FUserClient::free() {
@@ -55,6 +64,9 @@ void SoftU2FUserClient::free() {
 
   if (_notifyRef)
     IOFree(_notifyRef, sizeof(OSAsyncReference64));
+
+  if (_commandGate)
+    _commandGate->release();
 
   return super::free();
 }
@@ -65,6 +77,7 @@ bool SoftU2FUserClient::start(IOService *provider) {
   IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
 
   SoftU2FDevice *device = nullptr;
+  IOWorkLoop *workLoop = nullptr;
 
   if (!OSDynamicCast(SoftU2FDriver, provider))
     goto fail_bad_provider;
@@ -84,8 +97,22 @@ bool SoftU2FUserClient::start(IOService *provider) {
 
   device->release();
 
+  workLoop = getWorkLoop();
+  if (!workLoop)
+    goto fail_no_workloop;
+
+  _commandGate = IOCommandGate::commandGate(this);
+  if (!_commandGate)
+    goto fail_new_cgate;
+
+  if (workLoop->addEventSource(_commandGate) != kIOReturnSuccess)
+    goto fail_add_event_source;
+
   return true;
 
+fail_add_event_source:
+fail_new_cgate:
+fail_no_workloop:
 fail_device_start:
   device->detach(this);
 
@@ -100,6 +127,16 @@ fail_bad_provider:
   return false;
 }
 
+void SoftU2FUserClient::stop(IOService *provider) {
+  IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, provider);
+
+  IOWorkLoop *workLoop = getWorkLoop();
+  if (workLoop && _commandGate)
+    workLoop->removeEventSource(_commandGate);
+
+  super::stop(provider);
+}
+
 // clientClose is called as a result of the user process calling IOServiceClose.
 IOReturn SoftU2FUserClient::clientClose(void) {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
@@ -109,6 +146,13 @@ IOReturn SoftU2FUserClient::clientClose(void) {
 }
 
 void SoftU2FUserClient::frameReceived(IOMemoryDescriptor *report) {
+  if (isInactive())
+    return;
+
+  _commandGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &SoftU2FUserClient::frameReceivedGated), report);
+}
+
+void SoftU2FUserClient::frameReceivedGated(IOMemoryDescriptor *report) {
   IOLog("%s[%p]::%s(%p)\n", getName(), this, __FUNCTION__, report);
 
   IOMemoryMap *reportMap = nullptr;

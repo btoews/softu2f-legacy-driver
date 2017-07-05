@@ -19,13 +19,26 @@ class SoftU2FUserClient : public IOUserClient {
   OSDeclareDefaultStructors(SoftU2FUserClient)
 
 private:
-  OSAsyncReference64 *_notifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
+  OSAsyncReference64 *_notifyRef;
+  IOCommandGate *_commandGate;
+
+  typedef struct {
+    uint32_t                    selector;
+    IOExternalMethodArguments * arguments;
+    IOExternalMethodDispatch *  dispatch;
+    OSObject *                  target;
+    void *                      reference;
+  } ExternalMethodGatedArguments;
+
+  IOReturn externalMethodGated(ExternalMethodGatedArguments * arguments);
+  virtual void frameReceivedGated(IOMemoryDescriptor *report);
 
 public:
   virtual void free() override;
 
   virtual bool start(IOService *provider) override;
+  virtual void stop(IOService *provider) override;
 
   virtual IOReturn clientClose(void) override;
 
