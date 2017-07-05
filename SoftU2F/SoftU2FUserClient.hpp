@@ -13,12 +13,13 @@
 #include "UserKernelShared.h"
 #include <IOKit/IOService.h>
 #include <IOKit/IOUserClient.h>
+#include <IOKit/IOCommandGate.h>
 
 class SoftU2FUserClient : public IOUserClient {
   OSDeclareDefaultStructors(SoftU2FUserClient)
 
-protected:
-  OSAsyncReference64 *fNotifyRef = nullptr;
+private:
+  OSAsyncReference64 *_notifyRef = nullptr;
   static const IOExternalMethodDispatch sMethods[kNumberOfMethods];
 
 public:

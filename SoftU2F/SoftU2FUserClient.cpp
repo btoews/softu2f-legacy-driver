@@ -53,8 +53,8 @@ IOReturn SoftU2FUserClient::externalMethod(uint32_t selector, IOExternalMethodAr
 void SoftU2FUserClient::free() {
   IOLog("%s[%p]::%s()\n", getName(), this, __FUNCTION__);
 
-  if (fNotifyRef)
-    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
+  if (_notifyRef)
+    IOFree(_notifyRef, sizeof(OSAsyncReference64));
 
   return super::free();
 }
@@ -81,7 +81,7 @@ bool SoftU2FUserClient::start(IOService *provider) {
 
   if (!device->start(this))
     goto fail_device_start;
-  
+
   device->release();
 
   return true;
@@ -122,9 +122,9 @@ void SoftU2FUserClient::frameReceived(IOMemoryDescriptor *report) {
   reportMap = report->map();
 
   // Notify userland that we got a report.
-  if (fNotifyRef && reportMap->getLength() == sizeof(U2FHID_FRAME)) {
+  if (_notifyRef && reportMap->getLength() == sizeof(U2FHID_FRAME)) {
     io_user_reference_t *args = (io_user_reference_t *)reportMap->getAddress();
-    sendAsyncResult64(*fNotifyRef, kIOReturnSuccess, args, sizeof(U2FHID_FRAME) / sizeof(io_user_reference_t));
+    sendAsyncResult64(*_notifyRef, kIOReturnSuccess, args, sizeof(U2FHID_FRAME) / sizeof(io_user_reference_t));
   }
 
   reportMap->release();
@@ -173,18 +173,18 @@ IOReturn SoftU2FUserClient::notifyFrame(io_user_reference_t *ref, uint32_t refCo
   if (isInactive())
     return kIOReturnOffline;
 
-  if (fNotifyRef) {
-    IOFree(fNotifyRef, sizeof(OSAsyncReference64));
-    fNotifyRef = nullptr;
+  if (_notifyRef) {
+    IOFree(_notifyRef, sizeof(OSAsyncReference64));
+    _notifyRef = nullptr;
   }
 
-  fNotifyRef = (OSAsyncReference64 *)IOMalloc(sizeof(OSAsyncReference64));
-  if (!fNotifyRef)
+  _notifyRef = (OSAsyncReference64 *)IOMalloc(sizeof(OSAsyncReference64));
+  if (!_notifyRef)
     return kIOReturnNoMemory;
 
-  bzero(fNotifyRef, sizeof(OSAsyncReference64));
+  bzero(_notifyRef, sizeof(OSAsyncReference64));
 
-  memcpy(fNotifyRef, ref, sizeof(io_user_reference_t) * refCount);
+  memcpy(_notifyRef, ref, sizeof(io_user_reference_t) * refCount);
 
   return kIOReturnSuccess;
 }
