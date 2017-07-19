@@ -1,3 +1,8 @@
+### This repository has been merged into https://github.com/github/SoftU2F. This repo only exists to preserve Git history.
+
+
+----
+
 # SoftU2F
 
 This is a toolset for implementing HID U2F tokens in software. This includes an OSX driver that emulates HID U2F devices as well as a library for sending/receiving messages using emulated device. See [SoftU2FTool](https://github.com/mastahyeti/SoftU2FTool) for an example of a fully functional U2F authenticator.
